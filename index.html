@@ -644,13 +644,17 @@
               sku: sku,
               desc: desc,
               note: item.note || '',
-              shift: item.shift || '',
               qty: 0
             };
           }
 
           groupedByType[transType].items[key].qty += Number(item.qty) || 0;
           groupedByType[transType].totalQty += Number(item.qty) || 0;
+
+          // Simpan catatan terbaru jika ada.
+          if (item.note) {
+            groupedByType[transType].items[key].note = item.note;
+          }
         });
 
         const sections = Object.entries(groupedByType).map(([transType, group]) => {
@@ -670,11 +674,13 @@
                      : transType.toLowerCase().includes('repack') ? '🔄'
                      : '📋';
 
+          // SKU, Description, dan Qty dibuat SATU BARIS agar rapi di WhatsApp.
           const detail = groupItems
-            .map(item =>
-              `${item.sku}\n${item.desc}\nQty : ${fmtQty(item.qty)} ZAK`
-            )
-            .join('\n\n');
+            .map(item => {
+              const noteLine = item.note ? `\\n  ↳ Catatan : ${item.note}` : '';
+              return `• ${item.sku} | ${item.desc} | ${fmtQty(item.qty)} ZAK${noteLine}`;
+            })
+            .join('\\n');
 
           return `━━━━━━━━━━━━━━━━━━
 ${icon} ${sectionTitle}
@@ -682,13 +688,13 @@ ${icon} ${sectionTitle}
 ${detail}
 
 Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
-        }).join('\n\n\n');
+        }).join('\\n\\n');
 
         const grandTotal = Object.entries(groupedByType)
           .map(([transType, group]) =>
             `${transType.padEnd(18, ' ')} : ${fmtQty(group.totalQty)} ZAK`
           )
-          .join('\n');
+          .join('\\n');
 
         const totalSku = Object.values(groupedByType)
           .reduce((sum, group) => sum + Object.keys(group.items).length, 0);
@@ -717,7 +723,6 @@ Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
 👤 Admin${shiftLine}
 
 ${sections}
-
 
 📊 TRANSACTION SUMMARY
 ${grandTotal}
