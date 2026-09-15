@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MySCM Center - GM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+      :root {
+        --primary: #2563eb; 
+        --primary-light: #eff6ff;
+        --secondary: #f59e0b;
+        --secondary-dark: #d97706;
+        --success: #10b981; 
+        --danger: #ef4444;
+        --bg-body: #f1f5f9; 
+        --bg-card: #ffffff;
+        --text-main: #1e293b; 
+        --text-muted: #64748b;
+        --border: #e2e8f0; 
+        --radius: 12px;
+        --shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+      }
+      
+      * { box-sizing: border-box; }
+      body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); margin: 0; padding: 10px; font-size: 14px; }
+      .hidden-by-js { display: none !important; }
+
+      /* APP LAYOUT */
+      .app-container { max-width: 100%; margin: 0 auto; }
+      header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
+      @media (min-width: 768px) { header { flex-direction: row; justify-content: space-between; align-items: center; } }
+      .brand { font-size: 22px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #0f172a; }
+      .brand-group { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+      @media (min-width: 768px) { .brand-group { width: auto; } }
+      .nav-tabs { display: flex; background: white; padding: 5px; border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; gap: 5px; }
+      .nav-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex: 1; transition: 0.2s; }
+      .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+
+      /* GENERAL UI */
+      .card { background: var(--bg-card); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+      .page-section { display: none !important; }
+      .page-section.active { display: block !important; animation: fadeIn 0.4s; }
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .form-row { display: grid; gap: 15px; grid-template-columns: 1fr; margin-bottom: 15px; }
+      @media(min-width: 768px){ .form-row { grid-template-columns: 1fr 1fr; } }
+      input, select { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+      .btn-add { background: var(--secondary); color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; transition: 0.2s; }
+      .btn-primary { background: var(--primary); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-weight: 600; cursor: pointer; font-size: 16px; transition: 0.2s; }
+      .btn-danger { background: var(--danger); color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; }
+      .btn-danger:hover { background: #b91c1c; }
+      .table-wrapper { overflow-x: auto; margin-bottom: 10px; width: 100%; }
+      table { width: 100%; border-collapse: collapse; min-width: 600px; }
+      th { text-align: left; padding: 12px; background: #f8fafc; border-bottom: 2px solid var(--border); white-space: nowrap; }
+      td { padding: 12px; border-bottom: 1px solid var(--border); }
+      
+      /* Modals and Notifications */
+      #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 999; }
+      .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      
+      #custom-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px 40px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 9999; text-align: center; display: none; transition: opacity 0.3s ease; border-top: 4px solid var(--primary); }
+      #custom-notification.active { display: block; animation: popIn 0.3s ease; }
+      @keyframes popIn { 0% { transform: translate(-50%, -40%); opacity: 0; } 100% { transform: translate(-50%, -50%); opacity: 1; } }
+
+      #custom-confirm { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
+      #custom-confirm .modal-box { background:white; padding:24px; border-radius:12px; max-width:350px; width: 90%; text-align:center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: popIn 0.3s ease;}
+
+      /* MONITORING TABLE SPECIFIC */
+      .monitoring-table { border-collapse: collapse; border-spacing: 0; font-size: 11px; width: max-content; min-width: 100%; color: #000; }
+      .monitoring-table th, .monitoring-table td { border: 1px solid #cbd5e1; padding: 6px 10px; text-align: center; vertical-align: middle; }
+      .monitoring-table thead th { position: sticky; top: 0; background: #f8fafc; font-weight: 700; border-bottom: 2px solid #94a3b8; z-index: 20; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+      .sticky-col { position: sticky; left: 0; background: white; z-index: 10; border-right: 1px solid #cbd5e1; }
+      .monitoring-table thead th.sticky-col { z-index: 30; }
+      .sticky-col.col-seg { left: 220px; } 
+      .sticky-col.col-type { left: 300px; border-right: 8px solid #f1f5f9; } 
+      .row-header { text-align: left !important; padding-left: 8px; font-weight: 600; background: #fff; white-space: nowrap; }
+      .col-header-date { min-width: 70px; background: #f8fafc; }
+      .val-zak { color: #000; font-weight: 500; font-size: 12px; }
+      .row-balance { background-color: #f0fdf4; font-weight: bold; }
+      .row-capacity { background-color: #fffbeb; }
+      .row-percent { font-weight: bold; color: #000; }
+      .input-inline { width: 100%; border: none; border-bottom: 1px dotted #999; padding: 2px; text-align: right; font-size: 11px; background: transparent; }
+      .input-inline:focus { outline: none; border-bottom: 1px solid blue; background: #fff; }
+      .spacer-row td { border: none !important; background-color: #f1f5f9; height: 15px; }
+      
+      /* Smart FIFO Recommendation Box */
+      .fifo-box { background: #eff6ff; border: 1px dashed var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; display: none; }
+      .fifo-box.active { display: block; }
+    </style>
+  </head>
+  <body>
+    <div id="loading"><div class="spinner"></div></div>
+    
+    <div id="custom-notification">
+      <h3 id="notif-title" style="margin-top:0; color: var(--primary);">Alert</h3>
+      <div id="notif-message" style="color: var(--text-muted);">Message</div>
+    </div>
+
+    <div id="custom-confirm">
+      <div class="modal-box">
+        <h3 style="margin-top:0; color: var(--text-main);">Konfirmasi</h3>
+        <p id="confirm-msg" style="color: var(--text-muted); margin-bottom: 20px;"></p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button id="btn-confirm-cancel" class="btn-danger" style="padding: 10px 20px;">Batal</button>
+          <button id="btn-confirm-ok" class="btn-primary" style="padding: 10px 20px; width: auto;">Ya, Lanjutkan</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="app-view" class="app-container">
+      <header>
+        <div class="brand-group">
+          <div class="brand">
+            <span style="background:var(--primary); color:white; padding:4px 8px; border-radius:6px;">GM</span> MY SCM-Center
+          </div>
+        </div>
+        <nav class="nav-tabs">
+          <button class="nav-btn active" id="nav-entry" onclick="switchPage('entry')">Transaksi</button>
+          <button class="nav-btn" id="nav-monitoring" onclick="switchPage('monitoring')">Monitoring</button>
+        </nav>
+      </header>
+
+      <!-- PAGE: ENTRY -->
+      <section id="page-entry" class="page-section active">
+        <div class="card">
+          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
+            <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">1. DATA UMUM</div>
+            <div class="form-row">
+              <div><label>Tanggal</label><input type="date" id="date"></div>
+              <div><label>Tipe Transaksi</label>
+                <select id="transType" onchange="handleTransTypeChange()">
+                  <option value="Output Production">Output Production</option>
+                  <option value="Delivery">Delivery (FIFO Otomatis)</option>
+                  <option value="Selling In (DC)">Selling In (DC)</option>
+                  <option value="Sample">Sample</option>
+                  <option value="Promo">Promo</option>
+                  <option value="Broken">Broken</option>
+                  <option value="Repack Negatif">Repack Negatif</option>
+                  <option value="Repack Positif">Repack Positif</option>
+                  <option value="Adjustment Negatif">Adjustment Negatif</option>
+                  <option value="Adjustment Positif">Adjustment Positif</option>
+                  <option value="Transfer Posting Material to Material">Transfer Posting Material to Material</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">2. DETAIL BARANG</div>
+            
+            <div id="fifoRecommendationBox" class="fifo-box">
+              <div style="font-weight:700; color:var(--primary); margin-bottom:4px;"><i class="fas fa-lightbulb"></i> Rekomendasi Alokasi Stok (FIFO Terlama)</div>
+              <div id="fifoRecommendationText">Pilih SKU untuk melihat rekomendasi BIN & Lot tertua.</div>
+            </div>
+
+            <div class="form-row">
+              <div><label>Segment</label><select id="segment" onchange="filterSKU()"><option value="">Pilih Segment</option><option value="Retail">Retail</option><option value="Project">Project</option><option value="General">General</option></select></div>
+              <div><label>SKU</label><select id="sku" onchange="autoFillDesc()" disabled><option>Pilih SKU</option></select></div>
+            </div>
+            <div class="form-row"><div style="grid-column: 1/-1;"><label>Deskripsi</label><input type="text" id="desc" readonly style="background:#f1f5f9;"></div></div>
+            <div class="form-row">
+              <div><label>BIN</label><select id="bin"><option value="">Pilih BIN</option><option value="FG-A">FG-A</option><option value="FG-B">FG-B</option><option value="FG-C">FG-C</option><option value="FG-D">FG-D</option><option value="FG-E">FG-E</option><option value="RACK">RACK</option></select></div>
+              <div><label>Lot Number</label><input type="text" id="lot" placeholder="Contoh: A-123"></div>
+            </div>
+            <div class="form-row">
+              <div><label>Qty (Zak)</label><input type="number" id="qty" min="1" placeholder="0"></div>
+              <div><label>Stok On-Hand (Sheet)</label><input type="text" id="stockOnHand" readonly placeholder="-" style="background:#f1f5f9; font-weight:700; color:var(--primary);"></div>
+            </div>
+            <button onclick="addItemToList()" class="btn-add">+ Tambah Item ke Keranjang</button>
+          </div>
+          <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">3. KERANJANG DRAFT</div>
+          <div class="table-wrapper"><table id="transactionTable"><thead><tr><th>Tipe</th><th>SKU</th><th>Desc</th><th>BIN</th><th>Lot</th><th>Qty</th><th>Aksi</th></tr></thead><tbody><tr id="emptyRow"><td colspan="7" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr></tbody></table></div>
+          <button id="btnSubmitAll" onclick="submitAll()" class="btn-primary" disabled>Simpan & Proses Transaksi</button>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--success);"><h3>Riwayat Hari Ini</h3><div class="table-wrapper"><table id="todayTable"><thead><tr><th>Jam</th><th>Tipe</th><th>SKU</th><th>Desc</th><th>Qty</th></tr></thead><tbody></tbody></table></div></div>
+      </section>
+
+      <!-- PAGE: MONITORING -->
+      <section id="page-monitoring" class="page-section">
+        <div class="card" style="margin-bottom: 20px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h2 style="font-size:18px; margin:0;">Monitoring Kapasitas & Mutasi</h2>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <select id="monSegment" style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                <option value="">Semua Segment</option>
+                <option value="Retail">Retail</option>
+                <option value="Project">Project</option>
+              </select>
+              <select id="monMonth" style="padding:8px; border-radius:6px; border:1px solid #ddd;">
+                <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option><option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+                <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option><option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+              </select>
+              <input type="number" id="monYear" placeholder="Tahun" style="width:80px; padding:8px; border:1px solid #ddd; border-radius:6px;" value="2026">
+              <button onclick="loadMonitoringData()" class="btn-add" style="padding:8px 15px; width:auto;">Load Data</button>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="padding: 0; overflow:hidden;">
+          <div class="table-wrapper" style="max-height: 70vh; margin:0; overflow:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin: 10px; background:#f1f5f9; padding:10px; border-radius:8px;">
+              <div style="font-weight:600; font-size:12px; color:#64748b;">
+                Total Data: <span id="totalRecords">0</span> | Halaman: <span id="pageIndicator">1/1</span>
+              </div>
+              <div style="display:flex; gap:5px;">
+                <button onclick="prevPage()" class="btn-add" style="width:auto; padding:6px 12px; background:#94a3b8;">&lt; Back</button>
+                <button onclick="nextPage()" class="btn-add" style="width:auto; padding:6px 12px;">Next &gt;</button>
+              </div>
+            </div>
+            <table class="monitoring-table" id="monitoringTable">
+              <thead></thead><tbody><tr><td colspan="10" style="padding:20px; text-align:center;">Silakan pilih periode dan klik Load Data</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybjEBLQt9AfSF61NmG2ZaWOXJCuL2vMMAutHHpDJi1kwzAbLNPgq_XduH3HlPqo0xR-Q/exec'; 
+
+      let masterData = [], transactionItems = [];
+      
+      function showAlert(title, message) {
+        document.getElementById('notif-title').innerText = title;
+        document.getElementById('notif-message').innerText = message;
+        document.getElementById('custom-notification').classList.add('active');
+        setTimeout(() => document.getElementById('custom-notification').classList.remove('active'), 3500);
+      }
+
+      function showConfirm(message, callback) {
+        const modal = document.getElementById('custom-confirm');
+        document.getElementById('confirm-msg').innerText = message;
+        modal.style.display = 'flex';
+        
+        const btnOk = document.getElementById('btn-confirm-ok');
+        const btnCancel = document.getElementById('btn-confirm-cancel');
+        
+        btnOk.onclick = null;
+        btnCancel.onclick = null;
+        
+        btnOk.onclick = () => { modal.style.display = 'none'; callback(); };
+        btnCancel.onclick = () => { modal.style.display = 'none'; };
+      }
+
+      async function apiCall(action, payload = null) {
+        const url = `${SCRIPT_URL}?action=${action}`;
+        try {
+          let options = { method: 'GET', mode: 'cors' };
+          if (payload) {
+            options = {
+              method: 'POST',
+              mode: 'cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(payload)
+            };
+          }
+          const response = await fetch(url, options);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.warn("API Fetch warning/error, falling back to mock response:", error);
+          return mockResponse(action);
+        }
+      }
+
+      window.onload = async function() {
+        showLoading(true);
+        await loadMasterData();
+        await loadTodayRecords();
+        showLoading(false);
+        
+        switchPage('entry');
+        
+        const d = new Date(); 
+        const isoDate = d.toISOString().split('T')[0];
+        if(document.getElementById('date')) document.getElementById('date').value = isoDate;
+        if(document.getElementById('monMonth')) document.getElementById('monMonth').value = d.getMonth();
+        if(document.getElementById('monYear')) document.getElementById('monYear').value = d.getFullYear();
+        
+        handleTransTypeChange();
+      };
+      
+      function switchPage(p) {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
+        const btn = document.getElementById('nav-' + p); 
+        if(btn) btn.classList.add('active');
+        
+        document.querySelectorAll('.page-section').forEach(s => {
+          s.classList.remove('active'); 
+          s.style.display = 'none';
+        });
+        
+        const target = document.getElementById('page-' + p); 
+        if(target) { 
+          target.classList.add('active'); 
+          target.style.display = 'block'; 
+        }
+        
+        if(p === 'entry') loadTodayRecords();
+      }
+
+      function showLoading(x) { 
+        document.getElementById('loading').style.display = x ? 'flex' : 'none'; 
+      }
+
+      function handleTransTypeChange() {
+        const type = document.getElementById('transType').value.toLowerCase();
+        const fifoBox = document.getElementById('fifoRecommendationBox');
+        
+        // Daftar semua transaksi yang bersifat MENGURANGI stok
+        const isOutbound = type.includes('delivery') || 
+                           type.includes('selling') || 
+                           type.includes('sample') || 
+                           type.includes('promo') || 
+                           type.includes('broken') || 
+                           type.includes('negatif');
+
+        if (isOutbound) {
+          fifoBox.classList.add('active');
+          const selectedSku = document.getElementById('sku').value;
+          if(selectedSku && selectedSku !== "Pilih SKU" && selectedSku !== "") {
+              autoFillDesc();
+          }
+        } else {
+          fifoBox.classList.remove('active');
+        }
+      }
+
+      async function loadMasterData() { 
+          const d = await apiCall('getMasterData');
+          if(d && Array.isArray(d)) {
+              masterData = d;
+          }
+      }
+      
+      async function loadTodayRecords() { 
+          const d = await apiCall('getTodayRecords');
+          if(d && Array.isArray(d)) {
+              const t = document.querySelector('#todayTable tbody'); 
+              t.innerHTML = ''; 
+              if(d.length === 0) t.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">Belum ada riwayat hari ini</td></tr>';
+              d.forEach(r => t.innerHTML += `<tr><td>${r.time}</td><td>${r.type}</td><td>${r.sku}</td><td>${r.desc}</td><td>${r.qty}</td></tr>`);
+          }
+      }
+
+      function filterSKU() { 
+        const selectedSegment = document.getElementById('segment').value.trim().toLowerCase(); 
+        const sel = document.getElementById('sku'); 
+        sel.innerHTML = '<option value="">Pilih SKU</option>'; 
+        sel.disabled = false; 
+        
+        if(!masterData || masterData.length === 0) {
+            sel.innerHTML = '<option value="">Data Master kosong / gagal dimuat</option>';
+            return;
+        }
+        
+        const filtered = masterData.filter(m => m.segment && m.segment.trim().toLowerCase() === selectedSegment);
+        
+        if(filtered.length === 0) {
+            sel.innerHTML = '<option value="">Tidak ada SKU untuk segment ini</option>';
+            return;
+        }
+
+        filtered.forEach(m => {
+          let descPendek = (m.desc && m.desc.length > 50) ? m.desc.substring(0, 50) + "..." : m.desc;
+          let textTampil = m.sku + " | " + descPendek;
+          sel.add(new Option(textTampil, m.sku)); 
+        }); 
+      }
+
+      async function autoFillDesc() { 
+        const v = document.getElementById('sku').value;
+        const f = masterData.find(m => m.sku === v); 
+        const stockInput = document.getElementById('stockOnHand');
+        
+        if (f) { 
+          document.getElementById('desc').value = f.desc; 
+          stockInput.value = "Memuat On-Hand...";
+          
+          const today = new Date().toISOString().split('T')[0];
+          const res = await apiCall(`getReportData&date=${today}`);
+          
+          if (res && res.summary) {
+            const item = res.summary.find(s => s.sku === v);
+            stockInput.value = item ? item.qty + " Zak" : "0 Zak";
+          } else {
+            stockInput.value = "0 Zak";
+          }
+
+          const transType = document.getElementById('transType').value.toLowerCase();
+          
+          // Daftar semua transaksi yang butuh FIFO
+          const isOutbound = transType.includes('delivery') || 
+                             transType.includes('selling') || 
+                             transType.includes('sample') || 
+                             transType.includes('promo') || 
+                             transType.includes('broken') || 
+                             transType.includes('negatif');
+
+          if (isOutbound) {
+            const fifoRes = await apiCall(`getFifoRecommendation&sku=${v}`);
+            const fifoText = document.getElementById('fifoRecommendationText');
+            if (fifoRes && fifoRes.bin && fifoRes.bin !== '-') {
+              fifoText.innerHTML = `Rekomendasi Bin Tertua: <b>${fifoRes.bin}</b> | Lot Tertua: <b>${fifoRes.lot}</b> (Stok Tersedia: ${fifoRes.qty} Zak)`;
+              document.getElementById('bin').value = fifoRes.bin;
+              document.getElementById('lot').value = fifoRes.lot;
+            } else {
+              fifoText.innerHTML = `Data alokasi FIFO otomatis tidak ditemukan atau stok kosong untuk SKU ini.`;
+            }
+          }
+
+        } else {
+          document.getElementById('desc').value = "";
+          if (stockInput) stockInput.value = "";
+        }
+      }
+      
+      function addItemToList() {
+        const seg = document.getElementById('segment').value;
+        const sku = document.getElementById('sku').value;
+        const lot = document.getElementById('lot').value;
+        const bin = document.getElementById('bin').value;
+        const qty = document.getElementById('qty').value;
+        const type = document.getElementById('transType').value;
+        
+        if(!seg || !sku || !bin || !qty) { 
+          showAlert("Perhatian", "Mohon lengkapi semua data form!"); 
+          return; 
+        }
+        
+        transactionItems.push({
+          transType: type,
+          segment: seg, 
+          sku: sku, 
+          desc: document.getElementById('desc').value, 
+          bin: bin, 
+          lot: lot, 
+          qty: parseFloat(qty)
+        }); 
+        
+        renderTable();
+        document.getElementById('sku').value = ""; 
+        document.getElementById('desc').value = ""; 
+        document.getElementById('lot').value = ""; 
+        document.getElementById('qty').value = ""; 
+        document.getElementById('stockOnHand').value = "";
+      }
+
+      function renderTable() {
+        const tb = document.querySelector('#transactionTable tbody'); 
+        tb.innerHTML = '';
+        
+        if(!transactionItems.length) { 
+          tb.innerHTML = '<tr id="emptyRow"><td colspan="7" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr>'; 
+          document.getElementById('btnSubmitAll').disabled = true; 
+          return; 
+        }
+        
+        document.getElementById('btnSubmitAll').disabled = false; 
+        document.getElementById('btnSubmitAll').innerText = `Simpan ${transactionItems.length} Item ke Database`;
+        
+        transactionItems.forEach((it, i) => {
+          tb.innerHTML += `<tr><td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; color:var(--primary);">${it.transType}</span></td><td>${it.sku}</td><td>${it.desc}</td><td>${it.bin}</td><td>${it.lot}</td><td>${it.qty}</td><td><button onclick="transactionItems.splice(${i},1);renderTable()" class="btn-danger"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
+      }
+
+      function submitAll() {
+        // Hitung rekap tipe transaksi di keranjang untuk ditampilkan di konfirmasi
+        let typeCounts = {};
+        transactionItems.forEach(item => {
+            typeCounts[item.transType] = (typeCounts[item.transType] || 0) + 1;
+        });
+        let summaryText = Object.entries(typeCounts).map(([type, count]) => `<b>${count}x ${type}</b>`).join(', ');
+
+        showConfirm(`Anda yakin ingin memproses transaksi ini ke database spreadsheet?<br><br><span style="font-size:12px; color:#64748b;">Rincian keranjang: ${summaryText}</span>`, async () => {
+            showLoading(true);
+            const payload = { 
+              date: document.getElementById('date').value, 
+              items: transactionItems 
+            };
+            const res = await apiCall('submitData', payload);
+            showLoading(false);
+            if(res && res.status === 'success') {
+                showAlert("Berhasil", "Transaksi berhasil disimpan ke spreadsheet!"); 
+                transactionItems = []; 
+                renderTable(); 
+                loadTodayRecords(); 
+            } else {
+                showAlert("Gagal", res?.message || "Terjadi kesalahan saat menyimpan data.");
+            }
+        });
+      }
+
+      let globalRawData = [];    
+      let globalFilteredData = []; 
+      let currentPage = 1;       
+      const ROWS_PER_PAGE = 20;  
+      let currentMonth = 0;      
+      let currentYear = 2026;    
+
+      function renderPagination() {
+        const start = (currentPage - 1) * ROWS_PER_PAGE;
+        const end = start + ROWS_PER_PAGE;
+        const dataSliced = globalFilteredData.slice(start, end);
+        
+        const totalPages = Math.ceil(globalFilteredData.length / ROWS_PER_PAGE);
+        document.getElementById('totalRecords').innerText = globalFilteredData.length;
+        document.getElementById('pageIndicator').innerText = `${currentPage} / ${totalPages || 1}`;
+        
+        renderMonitoringTable(dataSliced, currentMonth, currentYear);
+      }
+
+      function nextPage() { 
+        const totalPages = Math.ceil(globalFilteredData.length / ROWS_PER_PAGE); 
+        if (currentPage < totalPages) { 
+          currentPage++; 
+          renderPagination(); 
+        } 
+      }
+      
+      function prevPage() { 
+        if (currentPage > 1) { 
+          currentPage--; 
+          renderPagination(); 
+        } 
+      }
+      
+      async function loadMonitoringData() {
+        const m = parseInt(document.getElementById('monMonth').value);
+        const y = parseInt(document.getElementById('monYear').value);
+        const segFilter = document.getElementById('monSegment').value; 
+        
+        currentMonth = m; 
+        currentYear = y;
+        let startDay = 1, endDay = 31;
+        
+        showLoading(true);
+        const data = await apiCall(`getMonitoringData&m=${m}&y=${y}&start=${startDay}&end=${endDay}`);
+        
+        if(data) {
+            globalRawData = data; 
+            if(segFilter && segFilter !== "") { 
+              globalFilteredData = globalRawData.filter(item => item.segment === segFilter); 
+            } else { 
+              globalFilteredData = globalRawData; 
+            }
+            currentPage = 1; 
+            renderPagination(); 
+        }
+        showLoading(false); 
+      }
+      
+      async function updateParam(sku, type, val) {
+         const res = await apiCall('updateProductParams', {sku, type, val});
+         if(res && res.status === 'error') showAlert("Error", "Gagal menyimpan parameter!");
+      }
+
+      function renderMonitoringTable(data, month, year) {
+        const table = document.getElementById('monitoringTable');
+        const thead = table.querySelector('thead'); 
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = ''; 
+        thead.innerHTML = '';
+        
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
+        
+        let h1 = '<tr><th class="sticky-col" style="width:220px; z-index:20;">Nama Produk</th><th class="sticky-col col-seg" style="width:80px; z-index:20;">Segment</th><th class="sticky-col col-type" style="width:140px; z-index:20;">Type</th>';
+        for(let d = 1; d <= daysInMonth; d++) {
+          h1 += `<th class="col-header-date">${d}-${monthNames[month]}</th>`; 
+        }
+        h1 += '</tr>'; 
+        thead.innerHTML = h1;
+
+        const labels = [
+            {key:'output', l:'Output Production'}, 
+            {key:'delivery', l:'Delivery'}, 
+            {key:'sellingIn', l:'Selling In (DC)'},
+            {key:'sample', l:'Sample/Promo'}, 
+            {key:'broken', l:'Broken'}, 
+            {key:'balance', l:'Balance Stock', c:'row-balance'},
+            {key:'min', l:'Min Stock'}, 
+            {key:'max', l:'Max Capacity WH', c:'row-capacity'},
+            {key:'percent', l:'% Capacity used', c:'row-percent'}, 
+            {key:'note', l:'Noted'}
+        ];
+
+        data.forEach((item) => {
+           const totalRows = labels.length;
+           labels.forEach((lbl, li) => {
+              let tr = document.createElement('tr'); 
+              if(lbl.c) tr.className = lbl.c;
+              
+              let stickyCells = '';
+              if (li === 0) {
+                 stickyCells += `<td class="sticky-col" rowspan="${totalRows}" style="background:#fff; font-weight:600; vertical-align:middle; text-align:left;">${item.desc}</td>`;
+                 stickyCells += `<td class="sticky-col col-seg" rowspan="${totalRows}" style="background:#fff; vertical-align:middle;">${item.segment}</td>`;
+              }
+              stickyCells += `<td class="sticky-col col-type row-header" style="background:#fff;">${lbl.l}</td>`;
+
+              let cells = '';
+              for(let d = 1; d <= daysInMonth; d++) {
+                  let dayData = item.dailyData ? item.dailyData.find(dd => dd.day === d) : null;
+                  let dObj = dayData || { output:0, delivery:0, sellingIn:0, sample:0, promo:0, broken:0, balance:0 }; 
+                  let val = 0; 
+                  let show = '-'; 
+                  let isInput = false;
+                  
+                  if(lbl.key === 'output') val = dObj.output; 
+                  else if(lbl.key === 'delivery') val = dObj.delivery; 
+                  else if(lbl.key === 'sellingIn') val = dObj.sellingIn;
+                  else if(lbl.key === 'sample') val = (dObj.sample || 0) + (dObj.promo || 0); 
+                  else if(lbl.key === 'broken') val = dObj.broken; 
+                  else if(lbl.key === 'balance') val = dObj.balance;
+                  else if(lbl.key === 'min') { isInput = true; val = item.minStock || 0; } 
+                  else if(lbl.key === 'max') { isInput = true; val = item.maxCap || 0; }
+                  else if(lbl.key === 'percent') { 
+                    let cp = item.maxCap > 0 ? (dObj.balance / item.maxCap * 100).toFixed(2) : 0; 
+                    show = cp + '%'; 
+                    val = null; 
+                  }
+
+                  if(val !== null && !isInput) show = val !== 0 ? val.toLocaleString() : '-';
+                  
+                  if(isInput) {
+                    cells += `<td style="padding:0"><input class="input-inline" value="${val}" onchange="updateParam('${item.sku}','${lbl.key}',this.value)"></td>`;
+                  } else {
+                    cells += `<td class="val-zak">${show}</td>`;
+                  }
+              }
+              tr.innerHTML = stickyCells + cells; 
+              tbody.appendChild(tr);
+           });
+           
+           let sep = document.createElement('tr'); 
+           sep.className = 'spacer-row';
+           sep.innerHTML = `<td colspan="${3 + daysInMonth}"></td>`; 
+           tbody.appendChild(sep);
+        });
+      }
+
+      function mockResponse(action) {
+          return new Promise(resolve => {
+              setTimeout(() => {
+                  if(action === 'getMasterData') resolve([
+                    {sku:'121-701-0007', segment:'Retail', desc:'DRV MRTR D-1 PRKT BATA RINGAN-40KG-RTL'}
+                  ]);
+                  else if(action === 'getTodayRecords') resolve([]);
+                  else if(action === 'submitData' || action === 'updateProductParams') resolve({status:'success'});
+                  else if(action.includes('getReportData')) resolve({summary: [{segment:'Retail', sku:'121-701-0007', desc:'DRV MRTR D-1 PRKT BATA RINGAN-40KG-RTL', qty:1000, maxAge:5, status:'Aman'}]});
+                  else if(action.includes('getFifoRecommendation')) resolve({bin:'FG-A', lot:'123', qty:1000});
+                  else if(action.includes('getMonitoringData')) resolve([]);
+              }, 200);
+          });
+      }
+    </script>
+  </body>
+</html>
