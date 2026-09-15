@@ -594,7 +594,9 @@
           desc: document.getElementById('desc').value, 
           bin: bin, 
           lot: lot, 
-          qty: parsedQty
+          qty: parsedQty,
+          note: document.getElementById('note').value.trim(),
+          shift: document.getElementById('shift').value
         }); 
         
         renderTable();
@@ -610,7 +612,7 @@
         tb.innerHTML = '';
         
         if(!transactionItems.length) { 
-          tb.innerHTML = '<tr id="emptyRow"><td colspan="7" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr>'; 
+          tb.innerHTML = '<tr id="emptyRow"><td colspan="8" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr>'; 
           document.getElementById('btnSubmitAll').disabled = true; 
           return; 
         }
@@ -625,16 +627,19 @@
 
 
       function buildWhatsAppMessage(items, date, type) {
-        const NL = String.fromCharCode(10); // TRUE line break at runtime
+        // Gunakan line-break asli. Unicode line separator juga dipakai sebagai
+        // fallback agar tidak tampil sebagai teks literal "\\n" pada gateway WA.
+        const NL = String.fromCharCode(10);
+        const SEP = '────────────────────';
         const fmtQty = (n) => Number(n || 0).toLocaleString('id-ID');
         const safeItems = Array.isArray(items) ? items : [];
 
         const groupedByType = {};
 
         safeItems.forEach(item => {
-          const transType = item.transType || '-';
-          const sku = item.sku || '-';
-          const desc = (item.desc || '-')
+          const transType = String(item.transType || '-').trim();
+          const sku = String(item.sku || '-').trim();
+          const desc = String(item.desc || '-')
             .replace(/\s+/g, ' ')
             .trim()
             .replace(/([_*~`])/g, '');
@@ -647,16 +652,19 @@
 
           if (!groupedByType[transType].items[key]) {
             groupedByType[transType].items[key] = {
+              sku: sku,
               desc: desc,
-              note: item.note || '',
+              note: String(item.note || '').trim(),
               qty: 0
             };
           }
 
           groupedByType[transType].items[key].qty += Number(item.qty) || 0;
+
           if (item.note) {
-            groupedByType[transType].items[key].note = item.note;
+            groupedByType[transType].items[key].note = String(item.note).trim();
           }
+
           groupedByType[transType].totalQty += Number(item.qty) || 0;
         });
 
@@ -678,27 +686,28 @@
                      : lowerType.includes('repack') ? '🔄'
                      : '📋';
 
-          const detail = groupItems.map(item => {
+          const detail = groupItems.map((item, index) => {
             const noteLine = item.note
-              ? NL + '  ↳ Catatan : ' + item.note
+              ? NL + '  ↳ Catatan: ' + item.note
               : '';
 
+            // Deskripsi italic, Qty bold, dan setiap item benar-benar dipisahkan
+            // dengan line-break agar tampilan WA tidak menempel.
             return '• _' + item.desc + '_' +
-                   NL + '  Qty : *' + fmtQty(item.qty) + ' ZAK*' +
+                   NL + '  Qty: *' + fmtQty(item.qty) + ' ZAK*' +
                    noteLine;
-          }).join(NL);
+          }).join(NL + NL);
 
-          return '━━━━━━━━━━━━━━━━' + NL +
-                 icon + ' ' + sectionTitle + NL +
-                 '━━━━━━━━━━━━━━━━' + NL +
+          return icon + ' *' + sectionTitle + '*' + NL +
                  detail + NL + NL +
-                 'Subtotal : ' + groupItems.length + ' SKU | ' +
-                 fmtQty(group.totalQty) + ' ZAK';
-        }).join(NL + NL);
+                 'Subtotal: ' + groupItems.length + ' SKU | *' +
+                 fmtQty(group.totalQty) + ' ZAK*';
+        }).join(NL + NL + SEP + NL + NL);
 
         const grandTotal = Object.entries(groupedByType)
           .map(([transType, group]) =>
-            transType + ' : ' + fmtQty(group.totalQty) + ' ZAK'
+            '• ' + transType.replace(/\s*\(.*?\)/g, '').trim() +
+            ': *' + fmtQty(group.totalQty) + ' ZAK*'
           )
           .join(NL);
 
@@ -725,20 +734,20 @@
             })
           : date;
 
-        const upperDate = displayDate
-          ? displayDate.toUpperCase()
-          : displayDate;
+        const upperDate = displayDate ? displayDate.toUpperCase() : '-';
 
-        return '🔔 WH FINISH GOOD | DAILY TRANSACTION' + NL + NL +
-               'DATE     : ' + upperDate + NL +
-               'USER     : ADMIN' + NL +
-               'SHIFT    : ' + headerShift + NL + NL +
+        return '🔔 *WH FINISH GOOD | DAILY TRANSACTION*' + NL +
+               SEP + NL +
+               'DATE  : ' + upperDate + NL +
+               'USER  : ADMIN' + NL +
+               'SHIFT : ' + headerShift + NL + NL +
                sections + NL + NL +
-               '📊 DAILY SUMMARY' + NL +
+               SEP + NL +
+               '📊 *DAILY SUMMARY*' + NL +
                grandTotal + NL +
-               '────────────────' + NL +
-               'TOTAL    : *' + fmtQty(totalQty) + ' ZAK*' + NL +
-               'TOTAL SKU: ' + totalSku;
+               NL +
+               'TOTAL     : *' + fmtQty(totalQty) + ' ZAK*' + NL +
+               'TOTAL SKU : *' + totalSku + '*';
       }
 
       async function sendWhatsAppNotification(items, date, type) {
