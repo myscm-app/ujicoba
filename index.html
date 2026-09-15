@@ -220,7 +220,7 @@
     </div>
 
     <script>
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzz2KSdwKMSnMioUDE4xC5qFrbv0mkGO3vfk56XhO3Wwh_eleK1GO5fjWuVn7JoI972rQ/exec'; 
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec'; 
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
@@ -603,6 +603,47 @@
         });
       }
 
+
+      function buildWhatsAppMessage(items, date, type) {
+        const fmtQty = (n) => Number(n || 0).toLocaleString('id-ID');
+        const safeItems = Array.isArray(items) ? items : [];
+
+        const grouped = {};
+        safeItems.forEach(item => {
+          const key = item.sku || '-';
+          grouped[key] = (grouped[key] || 0) + (Number(item.qty) || 0);
+        });
+
+        const detail = Object.entries(grouped)
+          .map(([sku, qty]) => `${sku.padEnd(52, ' ')}: ${fmtQty(qty)} ZAK`)
+          .join('\n');
+
+        const itemCount = Object.keys(grouped).length;
+        const totalQty = safeItems.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+
+        return `🔔 LAPORAN TRANSAKSI WH FINISH GOOD
+📅 Tgl : ${date}
+🔄 Tipe : ${type || '-'}
+👤 User : Admin
+
+Rincian Barang:
+
+${detail}
+
+Total Item: ${itemCount} ( ${fmtQty(totalQty)} ZAK )`;
+      }
+
+      async function sendWhatsAppNotification(items, date, type) {
+        try {
+          const message = buildWhatsAppMessage(items, date, type);
+          const res = await apiCall('sendWhatsApp', { message: message });
+          return res;
+        } catch (error) {
+          console.error('Gagal mengirim WhatsApp:', error);
+          return { status: 'error', message: error.message };
+        }
+      }
+
       function submitAll() {
         let typeCounts = {};
         transactionItems.forEach(item => {
@@ -619,7 +660,20 @@
             const res = await apiCall('submitData', payload);
             showLoading(false);
             if(res && res.status === 'success') {
-                showAlert("Berhasil", "Transaksi berhasil disimpan ke spreadsheet!"); 
+                const savedItems = [...transactionItems];
+                const savedDate = document.getElementById('date').value;
+                const savedType = savedItems.length > 0 ? savedItems[0].transType : '';
+
+                // Kirim laporan WhatsApp setelah transaksi berhasil tersimpan.
+                const waRes = await sendWhatsAppNotification(savedItems, savedDate, savedType);
+
+                if (waRes && (waRes.status === true || waRes.status === 'true' || waRes.status === 'success')) {
+                  showAlert("Berhasil", "Transaksi berhasil disimpan dan laporan WhatsApp berhasil dikirim.");
+                } else {
+                  showAlert("Berhasil", "Transaksi berhasil disimpan ke spreadsheet, tetapi laporan WhatsApp belum berhasil dikirim.");
+                  console.warn("Respons WhatsApp:", waRes);
+                }
+
                 transactionItems = []; 
                 renderTable(); 
                 loadTodayRecords(); 
