@@ -431,6 +431,56 @@
           showAlert("Perhatian", "Mohon lengkapi semua data form!"); 
           return; 
         }
+
+        const parsedQty = parseFloat(qty);
+        if (parsedQty <= 0) {
+          showAlert("Perhatian", "Quantity harus lebih besar dari 0!");
+          return;
+        }
+
+        // VALIDASI STOK MINUS
+        const typeLower = type.toLowerCase();
+        const isOutbound = typeLower.includes('delivery') || 
+                           typeLower.includes('selling') || 
+                           typeLower.includes('sample') || 
+                           typeLower.includes('promo') || 
+                           typeLower.includes('broken') || 
+                           typeLower.includes('negatif');
+
+        if (isOutbound) {
+          const stockText = document.getElementById('stockOnHand').value;
+          
+          if (stockText.includes('Memuat')) {
+            showAlert("Perhatian", "Harap tunggu hingga data stok selesai dimuat!");
+            return;
+          }
+          
+          // Mengubah teks "1000 Zak" menjadi angka 1000
+          const currentStock = parseFloat(stockText) || 0; 
+          
+          // Cek total qty dari SKU yang sama yang SUDAH ADA di dalam keranjang
+          let qtyInCart = 0;
+          transactionItems.forEach(item => {
+            const itemTypeLower = item.transType.toLowerCase();
+            const itemIsOutbound = itemTypeLower.includes('delivery') || 
+                                   itemTypeLower.includes('selling') || 
+                                   itemTypeLower.includes('sample') || 
+                                   itemTypeLower.includes('promo') || 
+                                   itemTypeLower.includes('broken') || 
+                                   itemTypeLower.includes('negatif');
+                                   
+            if (item.sku === sku && itemIsOutbound) {
+              qtyInCart += item.qty;
+            }
+          });
+
+          const totalRequested = parsedQty + qtyInCart;
+
+          if (totalRequested > currentStock) {
+            showAlert("Stok Tidak Cukup!", `Stok On-Hand saat ini: ${currentStock} Zak.\nTotal diminta (+ yang di keranjang): ${totalRequested} Zak.`);
+            return; // Hentikan proses, jangan masukkan ke keranjang
+          }
+        }
         
         transactionItems.push({
           transType: type,
@@ -439,7 +489,7 @@
           desc: document.getElementById('desc').value, 
           bin: bin, 
           lot: lot, 
-          qty: parseFloat(qty)
+          qty: parsedQty
         }); 
         
         renderTable();
