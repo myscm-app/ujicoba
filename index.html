@@ -144,6 +144,15 @@
                   <option value="Transfer Posting Material to Material">Transfer Posting Material to Material</option>
                 </select>
               </div>
+              <div>
+                <label>Pilih Shift <span style="font-weight:400; color:#94a3b8;">(Optional)</span></label>
+                <select id="shift">
+                  <option value="">Pilih Shift (Optional)</option>
+                  <option value="Shift 1">Shift 1</option>
+                  <option value="Shift 2">Shift 2</option>
+                  <option value="Shift 3">Shift 3</option>
+                </select>
+              </div>
             </div>
           </div>
           
@@ -168,10 +177,16 @@
               <div><label>Qty (Zak)</label><input type="number" id="qty" min="1" placeholder="0"></div>
               <div><label>Stok On-Hand (Sheet)</label><input type="text" id="stockOnHand" readonly placeholder="-" style="background:#f1f5f9; font-weight:700; color:var(--primary);"></div>
             </div>
+            <div class="form-row">
+              <div style="grid-column: 1/-1;">
+                <label>Keterangan / Catatan <span style="font-weight:400; color:#94a3b8;">(Optional)</span></label>
+                <input type="text" id="note" placeholder="Isi keterangan / catatan jika diperlukan">
+              </div>
+            </div>
             <button onclick="addItemToList()" class="btn-add">+ Tambah Item ke Keranjang</button>
           </div>
           <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">3. KERANJANG DRAFT</div>
-          <div class="table-wrapper"><table id="transactionTable"><thead><tr><th>Tipe</th><th>SKU</th><th>Desc</th><th>BIN</th><th>Lot</th><th>Qty</th><th>Aksi</th></tr></thead><tbody><tr id="emptyRow"><td colspan="7" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr></tbody></table></div>
+          <div class="table-wrapper"><table id="transactionTable"><thead><tr><th>Tipe</th><th>SKU</th><th>Desc</th><th>BIN</th><th>Lot</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody><tr id="emptyRow"><td colspan="8" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr></tbody></table></div>
           <button id="btnSubmitAll" onclick="submitAll()" class="btn-primary" disabled>Simpan & Proses Transaksi</button>
         </div>
         <div class="card" style="border-top: 4px solid var(--success);"><h3>Riwayat Hari Ini</h3><div class="table-wrapper"><table id="todayTable"><thead><tr><th>Jam</th><th>Tipe</th><th>SKU</th><th>Desc</th><th>Qty</th></tr></thead><tbody></tbody></table></div></div>
@@ -608,29 +623,107 @@
         const fmtQty = (n) => Number(n || 0).toLocaleString('id-ID');
         const safeItems = Array.isArray(items) ? items : [];
 
-        const grouped = {};
+        // Kelompokkan berdasarkan tipe transaksi.
+        const groupedByType = {};
+
         safeItems.forEach(item => {
-          const key = item.sku || '-';
-          grouped[key] = (grouped[key] || 0) + (Number(item.qty) || 0);
+          const transType = item.transType || '-';
+          const sku = item.sku || '-';
+          const desc = item.desc || '-';
+          const key = `${transType}||${sku}`;
+
+          if (!groupedByType[transType]) {
+            groupedByType[transType] = {
+              items: {},
+              totalQty: 0
+            };
+          }
+
+          if (!groupedByType[transType].items[key]) {
+            groupedByType[transType].items[key] = {
+              sku: sku,
+              desc: desc,
+              note: item.note || '',
+              shift: item.shift || '',
+              qty: 0
+            };
+          }
+
+          groupedByType[transType].items[key].qty += Number(item.qty) || 0;
+          groupedByType[transType].totalQty += Number(item.qty) || 0;
         });
 
-        const detail = Object.entries(grouped)
-          .map(([sku, qty]) => `${sku.padEnd(52, ' ')}: ${fmtQty(qty)} ZAK`)
-          .join('\n');
+        const sections = Object.entries(groupedByType).map(([transType, group]) => {
+          const groupItems = Object.values(group.items);
 
-        const itemCount = Object.keys(grouped).length;
-        const totalQty = safeItems.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+          const sectionTitle = transType
+            .replace(/\s*\(.*?\)/g, '')
+            .trim()
+            .toUpperCase();
 
-        return `🔔 LAPORAN TRANSAKSI WH FINISH GOOD
-📅 Tgl : ${date}
-🔄 Tipe : ${type || '-'}
-👤 User : Admin
+          const icon = transType.toLowerCase().includes('delivery') ? '📦'
+                     : transType.toLowerCase().includes('output production') ? '🏭'
+                     : transType.toLowerCase().includes('selling') ? '📦'
+                     : transType.toLowerCase().includes('sample') ? '🧪'
+                     : transType.toLowerCase().includes('promo') ? '🎯'
+                     : transType.toLowerCase().includes('broken') ? '⚠️'
+                     : transType.toLowerCase().includes('repack') ? '🔄'
+                     : '📋';
 
-Rincian Barang:
+          const detail = groupItems
+            .map(item =>
+              `${item.sku}\n${item.desc}\nQty : ${fmtQty(item.qty)} ZAK`
+            )
+            .join('\n\n');
 
+          return `━━━━━━━━━━━━━━━━━━
+${icon} ${sectionTitle}
+━━━━━━━━━━━━━━━━━━
 ${detail}
 
-Total Item: ${itemCount} ( ${fmtQty(totalQty)} ZAK )`;
+Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
+        }).join('\n\n\n');
+
+        const grandTotal = Object.entries(groupedByType)
+          .map(([transType, group]) =>
+            `${transType.padEnd(18, ' ')} : ${fmtQty(group.totalQty)} ZAK`
+          )
+          .join('\n');
+
+        const totalSku = Object.values(groupedByType)
+          .reduce((sum, group) => sum + Object.keys(group.items).length, 0);
+
+        const totalQty = safeItems.reduce(
+          (sum, item) => sum + (Number(item.qty) || 0), 0
+        );
+
+        const shifts = [...new Set(
+          safeItems.map(item => item.shift).filter(Boolean)
+        )];
+        const shiftLine = shifts.length
+          ? `\\n🕐 Shift : ${shifts.join(' / ')}`
+          : '';
+
+        const displayDate = date
+          ? new Date(date + 'T00:00:00').toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            })
+          : date;
+
+        return `🔔 WH FINISH GOOD | TRANSACTION REPORT
+📅 ${displayDate}
+👤 Admin${shiftLine}
+
+${sections}
+
+
+📊 TRANSACTION SUMMARY
+${grandTotal}
+────────────────────────
+TOTAL             : ${fmtQty(totalQty)} ZAK
+Total SKU         : ${totalSku}`;
       }
 
       async function sendWhatsAppNotification(items, date, type) {
@@ -662,10 +755,9 @@ Total Item: ${itemCount} ( ${fmtQty(totalQty)} ZAK )`;
             if(res && res.status === 'success') {
                 const savedItems = [...transactionItems];
                 const savedDate = document.getElementById('date').value;
-                const savedType = savedItems.length > 0 ? savedItems[0].transType : '';
 
-                // Kirim laporan WhatsApp setelah transaksi berhasil tersimpan.
-                const waRes = await sendWhatsAppNotification(savedItems, savedDate, savedType);
+                // buildWhatsAppMessage akan mengelompokkan otomatis berdasarkan tipe transaksi.
+                const waRes = await sendWhatsAppNotification(savedItems, savedDate, '');
 
                 if (waRes && (waRes.status === true || waRes.status === 'true' || waRes.status === 'success')) {
                   showAlert("Berhasil", "Transaksi berhasil disimpan dan laporan WhatsApp berhasil dikirim.");
