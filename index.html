@@ -625,6 +625,7 @@
 
 
       function buildWhatsAppMessage(items, date, type) {
+        const NL = String.fromCharCode(10); // TRUE line break at runtime
         const fmtQty = (n) => Number(n || 0).toLocaleString('id-ID');
         const safeItems = Array.isArray(items) ? items : [];
 
@@ -634,16 +635,14 @@
           const transType = item.transType || '-';
           const sku = item.sku || '-';
           const desc = (item.desc || '-')
-            .replace(/\\s+/g, ' ')
+            .replace(/\s+/g, ' ')
             .trim()
             .replace(/([_*~`])/g, '');
+
           const key = `${transType}||${sku}`;
 
           if (!groupedByType[transType]) {
-            groupedByType[transType] = {
-              items: {},
-              totalQty: 0
-            };
+            groupedByType[transType] = { items: {}, totalQty: 0 };
           }
 
           if (!groupedByType[transType].items[key]) {
@@ -655,7 +654,9 @@
           }
 
           groupedByType[transType].items[key].qty += Number(item.qty) || 0;
-          if (item.note) groupedByType[transType].items[key].note = item.note;
+          if (item.note) {
+            groupedByType[transType].items[key].note = item.note;
+          }
           groupedByType[transType].totalQty += Number(item.qty) || 0;
         });
 
@@ -663,43 +664,43 @@
           const groupItems = Object.values(group.items);
 
           const sectionTitle = transType
-            .replace(/\\s*\\(.*?\\)/g, '')
+            .replace(/\s*\(.*?\)/g, '')
             .trim()
             .toUpperCase();
 
-          const icon = transType.toLowerCase().includes('delivery') ? '📦'
-                     : transType.toLowerCase().includes('output production') ? '🏭'
-                     : transType.toLowerCase().includes('selling') ? '📦'
-                     : transType.toLowerCase().includes('sample') ? '🧪'
-                     : transType.toLowerCase().includes('promo') ? '🎯'
-                     : transType.toLowerCase().includes('broken') ? '⚠️'
-                     : transType.toLowerCase().includes('repack') ? '🔄'
+          const lowerType = transType.toLowerCase();
+          const icon = lowerType.includes('delivery') ? '📦'
+                     : lowerType.includes('output production') ? '🏭'
+                     : lowerType.includes('selling') ? '📦'
+                     : lowerType.includes('sample') ? '🧪'
+                     : lowerType.includes('promo') ? '🎯'
+                     : lowerType.includes('broken') ? '⚠️'
+                     : lowerType.includes('repack') ? '🔄'
                      : '📋';
 
-          // WhatsApp formatting:
-          // description = italic, qty = bold.
-          const detail = groupItems
-            .map(item => {
-              const noteLine = item.note
-                ? `\\n  ↳ Catatan : ${item.note}`
-                : '';
-              return `• _${item.desc}_\\n  Qty : *${fmtQty(item.qty)} ZAK*${noteLine}`;
-            })
-            .join('\\n');
+          const detail = groupItems.map(item => {
+            const noteLine = item.note
+              ? NL + '  ↳ Catatan : ' + item.note
+              : '';
 
-          return `━━━━━━━━━━━━━━━━
-${icon} ${sectionTitle}
-━━━━━━━━━━━━━━━━
-${detail}
+            return '• _' + item.desc + '_' +
+                   NL + '  Qty : *' + fmtQty(item.qty) + ' ZAK*' +
+                   noteLine;
+          }).join(NL);
 
-Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
-        }).join('\\n\\n');
+          return '━━━━━━━━━━━━━━━━' + NL +
+                 icon + ' ' + sectionTitle + NL +
+                 '━━━━━━━━━━━━━━━━' + NL +
+                 detail + NL + NL +
+                 'Subtotal : ' + groupItems.length + ' SKU | ' +
+                 fmtQty(group.totalQty) + ' ZAK';
+        }).join(NL + NL);
 
         const grandTotal = Object.entries(groupedByType)
           .map(([transType, group]) =>
-            `${transType} : ${fmtQty(group.totalQty)} ZAK`
+            transType + ' : ' + fmtQty(group.totalQty) + ' ZAK'
           )
-          .join('\\n');
+          .join(NL);
 
         const totalSku = Object.values(groupedByType)
           .reduce((sum, group) => sum + Object.keys(group.items).length, 0);
@@ -711,6 +712,7 @@ Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
         const shifts = [...new Set(
           safeItems.map(item => item.shift).filter(Boolean)
         )];
+
         const headerShift = shifts.length
           ? shifts.join(' / ').toUpperCase()
           : '-';
@@ -723,21 +725,20 @@ Subtotal : ${groupItems.length} SKU | ${fmtQty(group.totalQty)} ZAK`;
             })
           : date;
 
-        const upperDate = displayDate ? displayDate.toUpperCase() : displayDate;
+        const upperDate = displayDate
+          ? displayDate.toUpperCase()
+          : displayDate;
 
-        return `🔔 WH FINISH GOOD | DAILY TRANSACTION
-
-DATE     : ${upperDate}
-USER     : ADMIN
-SHIFT    : ${headerShift}
-
-${sections}
-
-📊 DAILY SUMMARY
-${grandTotal}
-────────────────
-TOTAL    : *${fmtQty(totalQty)} ZAK*
-TOTAL SKU: ${totalSku}`;
+        return '🔔 WH FINISH GOOD | DAILY TRANSACTION' + NL + NL +
+               'DATE     : ' + upperDate + NL +
+               'USER     : ADMIN' + NL +
+               'SHIFT    : ' + headerShift + NL + NL +
+               sections + NL + NL +
+               '📊 DAILY SUMMARY' + NL +
+               grandTotal + NL +
+               '────────────────' + NL +
+               'TOTAL    : *' + fmtQty(totalQty) + ' ZAK*' + NL +
+               'TOTAL SKU: ' + totalSku;
       }
 
       async function sendWhatsAppNotification(items, date, type) {
