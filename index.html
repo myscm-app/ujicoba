@@ -272,28 +272,30 @@
 
       window.onload = async function() {
         showLoading(true);
-        await loadMasterData();
-        await loadTodayRecords();
-        
-        // Pre-fetch report summary on load to cache it for instant selection
-        const today = new Date().toISOString().split('T')[0];
-        apiCall(`getReportData&date=${today}`).then(res => {
-          if(res && res.summary) cachedReportSummary = res.summary;
-        }).catch(err => console.log(err));
 
-        showLoading(false);
-        
-        switchPage('entry');
-        
-        const d = new Date(); 
+        const d = new Date();
         const isoDate = d.toISOString().split('T')[0];
         if(document.getElementById('date')) document.getElementById('date').value = isoDate;
         if(document.getElementById('monMonth')) document.getElementById('monMonth').value = d.getMonth();
         if(document.getElementById('monYear')) document.getElementById('monYear').value = d.getFullYear();
-        
+
+        // Muat Master Data dan Riwayat secara paralel agar lebih cepat.
+        await Promise.all([
+          loadMasterData(),
+          loadTodayRecords()
+        ]);
+
+        showLoading(false);
+        switchPage('entry');
         handleTransTypeChange();
+
+        // Ambil stok di background. Tidak menahan tampilan aplikasi.
+        const today = new Date().toISOString().split('T')[0];
+        apiCall(`getReportData&date=${today}`).then(res => {
+          if(res && res.summary) cachedReportSummary = res.summary;
+        }).catch(err => console.log('Background stock preload:', err));
       };
-      
+
       function switchPage(p) {
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active')); 
         const btn = document.getElementById('nav-' + p); 
@@ -362,74 +364,80 @@
           }
       }
 
-      async function filterSKU() { 
-        const selectedSegment = document.getElementById('segment').value.trim().toLowerCase(); 
-        const sel = document.getElementById('sku'); 
+      async function filterSKU() {
+        const selectedSegment = document.getElementById('segment').value.trim().toLowerCase();
+        const sel = document.getElementById('sku');
         const transType = document.getElementById('transType').value.toLowerCase();
 
-        sel.innerHTML = '<option value="">Pilih SKU</option>'; 
-        sel.disabled = false; 
+        sel.innerHTML = '<option value="">Memuat SKU...</option>';
+        sel.disabled = true;
 
         if(!masterData || masterData.length === 0) {
-            sel.innerHTML = '<option value="">Data Master kosong / gagal dimuat</option>';
-            return;
+          sel.innerHTML = '<option value="">Data Master kosong / gagal dimuat</option>';
+          return;
         }
 
-        // Tipe transaksi pengurang stok:
-        // hanya SKU dengan Stok On-Hand > 0 yang ditampilkan.
-        const isStockReducer = transType.includes('delivery') || 
-                               transType.includes('selling') || 
-                               transType.includes('sample') || 
-                               transType.includes('promo') || 
-                               transType.includes('broken') || 
+        const isStockReducer = transType.includes('delivery') ||
+                               transType.includes('selling') ||
+                               transType.includes('sample') ||
+                               transType.includes('promo') ||
+                               transType.includes('broken') ||
                                transType.includes('repack negatif') ||
                                transType.includes('adjustment negatif');
 
-        let filtered = masterData.filter(m => 
+        let filtered = masterData.filter(m =>
           m.segment && m.segment.trim().toLowerCase() === selectedSegment
         );
 
-        if (isStockReducer) {
+        // Request stok hanya sekali jika cache belum siap.
+        if (isStockReducer && !cachedReportSummary) {
           try {
             const today = new Date().toISOString().split('T')[0];
-            const reportRes = cachedReportSummary
-              ? { summary: cachedReportSummary }
-              : await apiCall(`getReportData&date=${today}`);
-
-            if (reportRes && Array.isArray(reportRes.summary)) {
+            const reportRes = await apiCall(`getReportData&date=${today}`);
+            if(reportRes && Array.isArray(reportRes.summary)) {
               cachedReportSummary = reportRes.summary;
-
-              const stockMap = {};
-              reportRes.summary.forEach(s => {
-                stockMap[String(s.sku).trim()] = Number(s.qty) || 0;
-              });
-
-              // Hanya tampilkan SKU yang benar-benar memiliki stok > 0.
-              filtered = filtered.filter(m => {
-                const stock = stockMap[String(m.sku).trim()] || 0;
-                return stock > 0;
-              });
-            } else {
-              filtered = [];
             }
-          } catch (e) {
-            console.error('Gagal mengambil stok untuk filter SKU:', e);
+          } catch(e) {
+            console.error('Gagal mengambil stok:', e);
+          }
+        }
+
+        // Transaksi pengurang stok: sembunyikan SKU dengan stok 0.
+        if (isStockReducer) {
+          if(Array.isArray(cachedReportSummary)) {
+            const stockMap = {};
+            cachedReportSummary.forEach(s => {
+              stockMap[String(s.sku).trim()] = Number(s.qty) || 0;
+            });
+
+            filtered = filtered.filter(m =>
+              (stockMap[String(m.sku).trim()] || 0) > 0
+            );
+          } else {
             filtered = [];
           }
         }
 
+        sel.innerHTML = '<option value="">Pilih SKU</option>';
+
         if(filtered.length === 0) {
-            sel.innerHTML = isStockReducer
-              ? '<option value="">Tidak ada SKU dengan Stok On-Hand > 0</option>'
-              : '<option value="">Tidak ada SKU untuk segment ini</option>';
-            return;
+          sel.innerHTML = isStockReducer
+            ? '<option value="">Tidak ada SKU dengan Stok On-Hand > 0</option>'
+            : '<option value="">Tidak ada SKU untuk segment ini</option>';
+          sel.disabled = false;
+          return;
         }
 
+        const fragment = document.createDocumentFragment();
         filtered.forEach(m => {
-          let descPendek = (m.desc && m.desc.length > 50) ? m.desc.substring(0, 50) + "..." : m.desc;
-          let textTampil = m.sku + " | " + descPendek;
-          sel.add(new Option(textTampil, m.sku)); 
-        }); 
+          let descPendek = (m.desc && m.desc.length > 50)
+            ? m.desc.substring(0, 50) + "..."
+            : m.desc;
+          fragment.appendChild(new Option(m.sku + " | " + descPendek, m.sku));
+        });
+
+        sel.appendChild(fragment);
+        sel.disabled = false;
       }
 
       async function autoFillDesc() { 
