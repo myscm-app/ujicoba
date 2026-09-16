@@ -1410,42 +1410,6 @@
       });
 
 
-      // MATRIX ONLY: klik Qty selalu masuk mode edit.
-      // Event dihentikan pada capture phase agar handler WMS lain tidak ikut terpanggil.
-      document.addEventListener('click', function (event) {
-        const cell = event.target.closest('#stockTransactionMatrix td.matrix-qty');
-        if (!cell || event.target.closest('#matrixQtyConfirm')) return;
-
-        event.preventDefault();
-        event.stopImmediatePropagation();
-
-        if (!cell.classList.contains('editing')) {
-          editMatrixQty(cell);
-        }
-      }, true);
-
-      // MATRIX ONLY: Enter/Escape ditangani sebelum handler lain.
-      document.addEventListener('keydown', function (event) {
-        const input = event.target.closest('#stockTransactionMatrix td.matrix-qty input');
-        if (!input) return;
-
-        event.stopImmediatePropagation();
-
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          const editorCell = input.closest('td.matrix-qty');
-          if (editorCell && typeof editorCell._openMatrixConfirm === 'function') {
-            editorCell._openMatrixConfirm();
-          }
-        } else if (event.key === 'Escape') {
-          event.preventDefault();
-          const editorCell = input.closest('td.matrix-qty');
-          if (editorCell && typeof editorCell._cancelMatrixEdit === 'function') {
-            editorCell._cancelMatrixEdit();
-          }
-        }
-      }, true);
-
       // ================================================================
       // MATRIX QTY EDITOR — CENTRALIZED / ROBUST POPUP
       // Tidak bergantung pada handler per-cell sehingga popup tetap muncul
