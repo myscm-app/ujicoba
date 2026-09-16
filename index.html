@@ -486,7 +486,9 @@
     </div>
 
     <script>
-      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec'; 
+      const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
+        // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
+        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbyBDk9suu0ds6Pef8389EWuE3UFi1sWMDcT_8VuF5hrX9U7ye_XQth8BxAy81ct73ciWg/exec'; 
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
@@ -535,6 +537,30 @@
         } catch (error) {
           console.warn("API Fetch warning/error, falling back to mock response:", error);
           return mockResponse(action);
+        }
+      }
+
+      async function stockMatrixApiCall(action, payload = null) {
+        const url = `${STOCK_MATRIX_URL}?action=${encodeURIComponent(action)}`;
+        try {
+          let options = { method: 'GET', mode: 'cors' };
+          if (payload) {
+            const body = Object.assign({}, payload, { action: action });
+            options = {
+              method: 'POST',
+              mode: 'cors',
+              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+              body: JSON.stringify(body)
+            };
+          }
+          const response = await fetch(url, options);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return await response.json();
+        } catch (error) {
+          console.error('Stock Matrix API error:', error);
+          throw error;
         }
       }
 
@@ -722,7 +748,7 @@
         showLoading(true);
 
         try {
-          const res = await apiCall(`getTransactionMatrix&month=${year}-${String(month+1).padStart(2,'0')}`);
+          const res = await stockMatrixApiCall(`getTransactionMatrix&month=${year}-${String(month+1).padStart(2,'0')}`);
           if (res && res.status === 'success' && Array.isArray(res.rows)) {
             const count = daysInMonth(year, month);
             const dates = Array.from({length: count}, (_,i) => `${year}-${String(month+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
@@ -733,7 +759,7 @@
             stockTransactionMatrixData = { dates: [], rows: [] };
             renderEmptyStockMatrix(
               res?.message ||
-              'Data matriks belum tersedia. Pastikan backend WMS memiliki action getTransactionMatrix.'
+              'Data matriks belum tersedia. Pastikan GS Stock Transaction Matrix sudah ter-deploy dan URL sudah benar.'
             );
             if (status) status.textContent = 'Backend belum tersedia';
           }
@@ -958,8 +984,15 @@
           async () => {
             showLoading(true);
             try {
-              const res = await apiCall('updateTransactionMatrix', {
-                changes: changes,
+              const enrichedChanges = changes.map(ch => {
+                const row = stockTransactionMatrixData.rows[ch.rowIndex] || {};
+                return Object.assign({}, ch, {
+                  desc: row.desc || row.description || row.materialDescription || '',
+                  segment: row.segment || ''
+                });
+              });
+              const res = await stockMatrixApiCall('updateTransactionMatrix', {
+                changes: enrichedChanges,
                 month: document.getElementById('matrixMonth')?.value,
                 year: document.getElementById('matrixYear')?.value
               });
