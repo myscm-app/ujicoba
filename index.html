@@ -254,6 +254,17 @@
         visibility:visible !important;
         pointer-events:auto !important;
       }
+      #matrixQtyConfirm {
+        contain:layout style paint;
+      }
+      #matrixQtyConfirm .matrix-confirm-box,
+      #matrixQtyConfirm .matrix-confirm-box * {
+        pointer-events:auto;
+      }
+      #matrixQtyConfirm .matrix-confirm-box {
+        position:relative;
+        z-index:1;
+      }
       #matrixQtyConfirm .matrix-confirm-box {
         width:min(430px,94vw);
         background:#fff;
@@ -298,7 +309,7 @@
     <div id="loading" aria-hidden="true" style="display:none !important;"></div>
     
         <!-- Dedicated confirmation for Matrix Qty revision -->
-    <div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
+    <div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:flex;opacity:0;visibility:hidden;pointer-events:none;">
       <div class="matrix-confirm-box">
         <div class="matrix-confirm-head">
           <div style="font-size:16px;font-weight:800;color:#0f172a;"><i class="fas fa-shield-alt" style="color:#2563eb;margin-right:7px;"></i>Konfirmasi Revisi Qty</div>
@@ -952,6 +963,56 @@
         return `${rowIndex}__${date}`;
       }
 
+      // Safe formatter for Matrix confirmation popup.
+      // Accepts YYYY-MM-DD / YYYY/MM/DD / DD-MM-YYYY style strings and
+      // falls back to the raw value when parsing is not possible.
+      function formatMatrixDate(dateValue) {
+        const raw = String(dateValue ?? '').trim();
+        if (!raw) return '-';
+
+        const iso = raw.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+        if (iso) {
+          const y = Number(iso[1]);
+          const m = Number(iso[2]);
+          const d = Number(iso[3]);
+          const dt = new Date(y, m - 1, d);
+          if (!Number.isNaN(dt.getTime())) {
+            return dt.toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            });
+          }
+        }
+
+        const dmy = raw.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+        if (dmy) {
+          const d = Number(dmy[1]);
+          const m = Number(dmy[2]);
+          const y = Number(dmy[3]);
+          const dt = new Date(y, m - 1, d);
+          if (!Number.isNaN(dt.getTime())) {
+            return dt.toLocaleDateString('id-ID', {
+              day: '2-digit',
+              month: 'short',
+              year: 'numeric'
+            });
+          }
+        }
+
+        return raw;
+      }
+
+      // Safe dirty-count updater. The Matrix editor must never fail after
+      // closing just because an optional counter element is absent.
+      function updateMatrixEditCount() {
+        const el = document.getElementById('matrixEditCount');
+        if (!el) return;
+        const changes = (typeof matrixDirtyChanges === 'object' && matrixDirtyChanges) ? matrixDirtyChanges : {};
+        const count = Object.keys(changes).length;
+        el.textContent = `${count} revisi`;
+      }
+
       function renderMatrixSkeleton() {
         const head = document.getElementById('stockTransactionMatrixHead');
         const body = document.getElementById('stockTransactionMatrixBody');
@@ -1232,21 +1293,8 @@
           cell.appendChild(input);
           this.input = input;
 
-          // HANDLER LANGSUNG PADA INPUT: tidak bergantung pada event delegation/global handler.
-          // Dipasang via property handler + listener agar Enter tetap tertangkap pada browser yang
-          // memiliki handler keydown lain di document/table.
-          const handleEnter = (e) => {
-            if (e.key !== 'Enter') return;
-            e.preventDefault();
-            e.stopPropagation();
-            e.stopImmediatePropagation();
-            // Jangan tunggu blur; buka popup sekarang juga.
-            this.confirm();
-          };
-          input.onkeydown = handleEnter;
-          input.onkeyup = handleEnter;
-
-          input.onkeydown = (e) => {
+          // Direct input keyboard handler: one keypress -> one action.
+          input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
               e.stopPropagation();
@@ -1258,7 +1306,7 @@
               e.stopImmediatePropagation();
               this.cancel();
             }
-          };
+          }, true);
 
           input.addEventListener('blur', () => {
             window.setTimeout(() => {
@@ -1295,12 +1343,16 @@
           this.newValue = value;
 
           if (this.msg) {
+            const safeDate = typeof formatMatrixDate === 'function'
+              ? formatMatrixDate(this.date)
+              : String(this.date ?? '-');
+
             this.msg.innerHTML =
               `<div style="display:grid;grid-template-columns:105px 1fr;gap:8px 10px;">` +
               `<span style="color:#64748b;">SKU</span><b>${escapeHtml(row.sku || row.material || row.materialCode || '')}</b>` +
               `<span style="color:#64748b;">Material</span><b>${escapeHtml(row.desc || row.description || row.materialDescription || '')}</b>` +
               `<span style="color:#64748b;">Transaksi</span><b>${escapeHtml(row.transType || row.type || row.transactionType || '')}</b>` +
-              `<span style="color:#64748b;">Tanggal</span><b>${escapeHtml(formatMatrixDate(this.date))}</b>` +
+              `<span style="color:#64748b;">Tanggal</span><b>${escapeHtml(safeDate)}</b>` +
               `<span style="color:#64748b;">Qty</span>` +
               `<b style="font-size:18px;">${formatMatrixQty(this.oldValue)} &rarr; ` +
               `<span style="color:#2563eb;">${formatMatrixQty(value)}</span></b>` +
