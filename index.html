@@ -58,192 +58,10 @@
       
       /* Modals and Notifications */
 
+      /* Lightweight startup state: no animated loading overlay. */
       #loading {
-        position: fixed;
-        inset: 0;
-        background: rgba(248,250,252,.94);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        backdrop-filter: blur(5px);
+        display: none !important;
       }
-
-      .coffee-loading-card {
-        width: min(470px, 92vw);
-        padding: 28px 28px 24px;
-        text-align: center;
-        background: rgba(255,255,255,.98);
-        border: 1px solid #dbe4ef;
-        border-radius: 22px;
-        box-shadow: 0 24px 70px rgba(15,23,42,.18);
-        overflow: hidden;
-      }
-
-      .coffee-cup-wrap {
-        position: relative;
-        width: 150px;
-        height: 130px;
-        margin: 0 auto 8px;
-      }
-
-      .coffee-table {
-        position: absolute;
-        left: 18px;
-        right: 18px;
-        bottom: 18px;
-        height: 8px;
-        border-radius: 50%;
-        background: #cbd5e1;
-        opacity: .65;
-      }
-
-      .coffee-cup {
-        position: absolute;
-        left: 34px;
-        bottom: 26px;
-        width: 82px;
-        height: 60px;
-        border-radius: 10px 10px 28px 28px;
-        background: linear-gradient(#ffffff,#f1f5f9);
-        border: 4px solid #334155;
-        box-shadow: inset 0 -10px 0 rgba(148,163,184,.16), 0 8px 16px rgba(15,23,42,.12);
-        animation: cupBob 1.35s ease-in-out infinite;
-      }
-
-      .coffee-cup::before {
-        content: "";
-        position: absolute;
-        left: 10px;
-        right: 10px;
-        top: 9px;
-        height: 13px;
-        border-radius: 50%;
-        background: #5b3825;
-        border: 3px solid #7c4a2d;
-        box-shadow: 0 2px 0 rgba(255,255,255,.5) inset;
-      }
-
-      .coffee-handle {
-        position: absolute;
-        right: -22px;
-        top: 15px;
-        width: 30px;
-        height: 30px;
-        border: 4px solid #334155;
-        border-left: 0;
-        border-radius: 0 18px 18px 0;
-        background: transparent;
-      }
-
-      .coffee-steam {
-        position: absolute;
-        top: 6px;
-        font-size: 28px;
-        color: #94a3b8;
-        opacity: .75;
-        filter: blur(.1px);
-      }
-
-      .coffee-steam.s1 { left: 52px; animation: steamFloat 2.5s ease-in-out infinite; }
-      .coffee-steam.s2 { left: 75px; animation: steamFloat 2.9s ease-in-out infinite .45s; }
-      .coffee-steam.s3 { left: 98px; animation: steamFloat 2.7s ease-in-out infinite .8s; }
-
-      .coffee-spark {
-        position: absolute;
-        font-size: 14px;
-        animation: sparkFloat 1.8s ease-in-out infinite;
-      }
-      .coffee-spark.a { left: 20px; top: 44px; }
-      .coffee-spark.b { right: 18px; top: 32px; animation-delay: .55s; }
-      .coffee-spark.c { right: 26px; bottom: 52px; animation-delay: .9s; }
-
-      .coffee-loading-title {
-        font-size: 17px;
-        font-weight: 900;
-        color: #0f172a;
-        margin: 4px 0 5px;
-      }
-
-      .coffee-loading-subtitle {
-        font-size: 11px;
-        color: #64748b;
-        margin: 0 0 14px;
-      }
-
-      .wisdom-box {
-        margin-top: 8px;
-        padding: 14px 16px;
-        border-radius: 14px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-      }
-
-      .wisdom-label {
-        font-size: 9px;
-        font-weight: 900;
-        letter-spacing: .08em;
-        text-transform: uppercase;
-        color: #2563eb;
-        margin-bottom: 6px;
-      }
-
-      .wisdom-text {
-        font-size: 12px;
-        line-height: 1.6;
-        color: #334155;
-        min-height: 38px;
-      }
-
-      .wisdom-author {
-        margin-top: 7px;
-        font-size: 10px;
-        font-weight: 800;
-        color: #64748b;
-      }
-
-      .coffee-dots {
-        display: flex;
-        justify-content: center;
-        gap: 5px;
-        margin-top: 13px;
-      }
-
-      .coffee-dots span {
-        width: 6px;
-        height: 6px;
-        border-radius: 50%;
-        background: #2563eb;
-        animation: coffeeDots 1s ease-in-out infinite;
-      }
-
-      .coffee-dots span:nth-child(2){ animation-delay:.15s; }
-      .coffee-dots span:nth-child(3){ animation-delay:.30s; }
-
-      @keyframes cupBob {
-        0%,100% { transform: translateY(0) rotate(-1deg); }
-        50% { transform: translateY(-5px) rotate(1deg); }
-      }
-
-      @keyframes steamFloat {
-        0% { transform: translateY(12px) scale(.75) rotate(-5deg); opacity: 0; }
-        25% { opacity: .65; }
-        60% { opacity: .55; }
-        100% { transform: translateY(-34px) scale(1.08) rotate(7deg); opacity: 0; }
-      }
-
-      @keyframes sparkFloat {
-        0%,100% { transform: translateY(0) scale(.8); opacity: .25; }
-        50% { transform: translateY(-8px) scale(1.1); opacity: .95; }
-      }
-
-      @keyframes coffeeDots {
-        0%,100% { transform: translateY(0); opacity: .35; }
-        50% { transform: translateY(-4px); opacity: 1; }
-      }
-
-
-
       
       /* Smart FIFO Recommendation Box */
       .fifo-box { background: #eff6ff; border: 1px dashed var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; display: none; }
@@ -418,7 +236,7 @@
       #matrixQtyConfirm {
         position:fixed !important;
         inset:0 !important;
-        display:none !important;
+        display:flex !important;
         align-items:center !important;
         justify-content:center !important;
         padding:20px !important;
@@ -432,7 +250,6 @@
         transform:translateZ(0);
       }
       #matrixQtyConfirm.is-open {
-        display:flex !important;
         opacity:1 !important;
         visibility:visible !important;
         pointer-events:auto !important;
@@ -477,40 +294,10 @@
     </style>
   </head>
   <body>
-    <div id="loading">
-      <div class="coffee-loading-card">
-        <div class="coffee-cup-wrap" aria-hidden="true">
-          <div class="coffee-steam s1">♨</div>
-          <div class="coffee-steam s2">♨</div>
-          <div class="coffee-steam s3">♨</div>
-          <div class="coffee-spark a">✦</div>
-          <div class="coffee-spark b">✧</div>
-          <div class="coffee-spark c">✦</div>
-          <div class="coffee-cup">
-            <div class="coffee-handle"></div>
-          </div>
-          <div class="coffee-table"></div>
-        </div>
-
-        <div class="coffee-loading-title">Seduh dulu sebentar ☕</div>
-        <div class="coffee-loading-subtitle">WMS sedang mengolah data... sambil menikmati secangkir kopi.</div>
-
-        <div class="wisdom-box">
-          <div class="wisdom-label">AI Wisdom of the Day</div>
-          <div id="wisdomText" class="wisdom-text">Menyiapkan secangkir kebijaksanaan...</div>
-          <div id="wisdomAuthor" class="wisdom-author"></div>
-        </div>
-
-        <div class="coffee-dots" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </div>
-      </div>
-    </div>
+    <!-- Loading overlay intentionally disabled for faster startup. -->
+    <div id="loading" aria-hidden="true" style="display:none !important;"></div>
     
-    
-    </div>
-
-    <!-- Dedicated confirmation for Matrix Qty revision -->
+        <!-- Dedicated confirmation for Matrix Qty revision -->
     <div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
       <div class="matrix-confirm-box">
         <div class="matrix-confirm-head">
@@ -947,9 +734,7 @@
         }
       }
 
-      // Satu wisdom baru setiap tanggal, dan AI dapat memperbaruinya tanpa
-      // memperlambat proses loading.
-      loadDailyWisdom();
+      // Daily wisdom request disabled to keep WMS startup lean and responsive.
 
       function showAlert(title, message) {
         const oldToast = document.getElementById('wms-clean-toast');
@@ -1532,11 +1317,11 @@
             return;
           }
 
-          // Tampilkan popup secara eksplisit. Tidak bergantung pada atribut [hidden]
-          // agar tidak kalah oleh CSS/handler global dari aplikasi WMS.
+          // Tampilkan popup secara eksplisit. Display tetap flex; visibilitas dikendalikan
+          // oleh opacity/visibility/pointer-events agar tidak bentrok dengan CSS !important.
           modal.hidden = false;
           modal.classList.add('is-open');
-          modal.style.display = 'flex';
+          modal.style.setProperty('display', 'flex', 'important');
           modal.style.opacity = '1';
           modal.style.visibility = 'visible';
           modal.style.pointerEvents = 'auto';
@@ -1619,7 +1404,7 @@
           if (modal) {
             modal.classList.remove('is-open');
             modal.hidden = false;
-            modal.style.display = 'none';
+            modal.style.setProperty('display', 'flex', 'important');
             modal.style.opacity = '0';
             modal.style.visibility = 'hidden';
             modal.style.pointerEvents = 'none';
