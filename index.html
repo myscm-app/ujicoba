@@ -540,20 +540,17 @@
         }
       }
 
-      async function stockMatrixApiCall(action, payload = null) {
-        const url = `${STOCK_MATRIX_URL}?action=${encodeURIComponent(action)}`;
+      async function stockMatrixApiCall(action, payload = null, queryParams = null) {
+        // Gunakan POST untuk semua request Stock Matrix agar action dan parameter
+        // tidak pernah tercampur menjadi satu nilai query string.
+        const body = Object.assign({}, payload || {}, queryParams || {}, { action: action });
         try {
-          let options = { method: 'GET', mode: 'cors' };
-          if (payload) {
-            const body = Object.assign({}, payload, { action: action });
-            options = {
-              method: 'POST',
-              mode: 'cors',
-              headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-              body: JSON.stringify(body)
-            };
-          }
-          const response = await fetch(url, options);
+          const response = await fetch(STOCK_MATRIX_URL, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(body)
+          });
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
@@ -748,7 +745,8 @@
         showLoading(true);
 
         try {
-          const res = await stockMatrixApiCall(`getTransactionMatrix&month=${year}-${String(month+1).padStart(2,'0')}`);
+          const targetMonth = `${year}-${String(month+1).padStart(2,'0')}`;
+          const res = await stockMatrixApiCall('getTransactionMatrix', null, { month: targetMonth });
           if (res && res.status === 'success' && Array.isArray(res.rows)) {
             const count = daysInMonth(year, month);
             const dates = Array.from({length: count}, (_,i) => `${year}-${String(month+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
