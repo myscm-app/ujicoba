@@ -4,7 +4,7 @@
     <base target="_top">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WMS - Warehouse Management System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     
     <style>
@@ -32,9 +32,142 @@
       .app-container { max-width: 100%; margin: 0 auto; }
       header { display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px; }
       @media (min-width: 768px) { header { flex-direction: row; justify-content: space-between; align-items: center; } }
-      .brand { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; color: #0f172a; }
+      header {
+        padding:10px 22px !important;
+        overflow:visible !important;
+        box-sizing:border-box;
+      }
+
+      .brand {
+
+        display:flex;
+        align-items:center;
+        gap:14px;
+        color:#07111f;
+        font-family:"Samsung Sharp Sans","SamsungOne","Space Grotesk","Inter",Arial,sans-serif;
+        user-select:none;
+      }
+
+      .brand {
+        flex:0 0 auto;
+        min-width:0;
+        overflow:visible;
+        padding:1px 0;
+      }
+      .brand-mark {
+        flex:0 0 46px;
+        width:46px;
+        height:46px;
+        margin-left:2px;
+        margin-right:0;
+        overflow:visible;
+      }
+      .brand-logo-svg {
+        width:46px;
+        height:46px;
+        overflow:visible;
+      }
+      .brand-copy {
+        min-width:0;
+        overflow:visible;
+        padding-right:4px;
+      }
+      .brand-subtitle {
+        overflow:visible;
+      }
+
+      .brand-logo-svg {
+        width:100%;
+        height:100%;
+        display:block;
+      }
+      .brand-logo-svg text {
+        paint-order:stroke;
+        stroke:rgba(6,24,67,.08);
+        stroke-width:.35px;
+      }
+
+      .brand-mark {
+        width:46px;
+        height:46px;
+        flex:0 0 46px;
+        display:grid;
+        place-items:center;
+        position:relative;
+        border-radius:13px;
+        background:
+          radial-gradient(circle at 28% 20%, rgba(255,255,255,.38), transparent 34%),
+          linear-gradient(145deg,#0b74ff 0%,#3156ff 43%,#101827 100%);
+        box-shadow:
+          0 12px 28px rgba(23,76,199,.24),
+          inset 0 1px 0 rgba(255,255,255,.34),
+          inset 0 -8px 18px rgba(2,10,24,.18);
+        overflow:hidden;
+      }
+      .brand-mark::before {
+        content:"";
+        position:absolute;
+        inset:7px;
+        border:1px solid rgba(255,255,255,.18);
+        border-radius:9px;
+      }
+      .brand-mark::after {
+        content:"";
+        position:absolute;
+        width:29px;
+        height:29px;
+        border-radius:9px;
+        border:1.2px solid rgba(255,255,255,.28);
+        transform:rotate(45deg);
+      }
+      .brand-wms {
+        position:relative;
+        z-index:3;
+        display:none;
+      }
+      .brand-copy {
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        line-height:1;
+      }
+      .brand-subtitle {
+        margin-top:0;
+        font-family:"Samsung Sharp Sans","SamsungOne","Space Grotesk","Inter",Arial,sans-serif;
+        font-size:12px;
+        font-weight:700;
+        letter-spacing:.115em;
+        text-transform:uppercase;
+        color:#0b1728;
+        white-space:nowrap;
+      }
       .brand-group { display: flex; align-items: center; justify-content: space-between; width: 100%; }
       @media (min-width: 768px) { .brand-group { width: auto; } }
+
+      @media (max-width: 600px) {
+        header {
+          padding:8px 16px !important;
+          min-height:58px;
+        }
+        .brand {
+          gap:11px;
+        }
+        .brand-mark,
+        .brand-logo-svg {
+          width:40px;
+          height:40px;
+          flex-basis:40px;
+        }
+        .brand-subtitle {
+          font-size:8.5px;
+          letter-spacing:.075em;
+        }
+
+        .brand-mark { width:40px; height:40px; flex-basis:40px; border-radius:12px; }
+        .brand-logo-svg { width:40px; height:40px; }
+        .brand-subtitle { font-size:9px; letter-spacing:.09em; }
+      }
+
       .nav-tabs { display: flex; background: white; padding: 5px; border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; gap: 5px; }
       .nav-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex: 1; transition: 0.2s; }
       .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
@@ -70,6 +203,107 @@
       /* ================================
          WMS AI COPILOT + VOICE ASSISTANT
          ================================ */
+
+      /* ================================
+         WMS UI SOUNDS
+         Lightweight, optional, browser-safe
+         ================================ */
+      .ui-sound-enabled .sound-indicator {
+        opacity: 1;
+      }
+
+      /* ================================
+         WMS AI COPILOT SIDEBAR
+         Hover preview + click to pin/open
+         ================================ */
+      .ai-sidebar {
+        position: fixed;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2000;
+        display:flex;
+        align-items:center;
+        pointer-events:none;
+      }
+      .ai-sidebar-tab {
+        pointer-events:auto;
+        width:58px;
+        min-height:116px;
+        border:1px solid rgba(148,163,184,.18);
+        border-right:none;
+        border-radius:16px 0 0 16px;
+        background:linear-gradient(180deg,#0f172a,#172554);
+        color:#fff;
+        box-shadow:0 14px 35px rgba(15,23,42,.25);
+        display:flex;
+        flex-direction:column;
+        align-items:center;
+        justify-content:center;
+        gap:8px;
+        cursor:pointer;
+        transition:width .18s ease, transform .18s ease, box-shadow .18s ease;
+      }
+      .ai-sidebar-tab:hover,
+      .ai-sidebar.is-open .ai-sidebar-tab {
+        width:66px;
+        transform:translateX(-2px);
+        box-shadow:0 16px 38px rgba(15,23,42,.34);
+      }
+      .ai-sidebar-icon { font-size:22px; line-height:1; }
+      .ai-sidebar-label {
+        font-size:10px;
+        line-height:1.05;
+        font-weight:800;
+        letter-spacing:.4px;
+        text-align:center;
+        color:#dbeafe;
+      }
+
+      .ai-copilot-panel {
+        position:absolute;
+        right:58px;
+        top:50%;
+        width:min(430px, calc(100vw - 86px));
+        transform:translate(14px,-50%) scale(.985);
+        opacity:0;
+        visibility:hidden;
+        pointer-events:none;
+        transition:opacity .16s ease, transform .16s ease, visibility .16s ease;
+      }
+      .ai-sidebar:hover .ai-copilot-panel,
+      .ai-sidebar.is-open .ai-copilot-panel {
+        opacity:1;
+        visibility:visible;
+        pointer-events:auto;
+        transform:translate(0,-50%) scale(1);
+      }
+
+      .ai-copilot {
+        margin-bottom:0;
+        width:100%;
+        box-sizing:border-box;
+        box-shadow:0 18px 55px rgba(15,23,42,.30);
+      }
+      .ai-panel-actions {
+        display:flex;
+        align-items:center;
+        gap:10px;
+      }
+      .ai-panel-close {
+        width:30px;
+        height:30px;
+        padding:0;
+        border:1px solid rgba(255,255,255,.16);
+        border-radius:8px;
+        background:rgba(255,255,255,.08);
+        color:#fff;
+        font-size:20px;
+        line-height:1;
+        cursor:pointer;
+      }
+      .ai-panel-close:hover { background:rgba(255,255,255,.16); }
+
       .ai-copilot {
         background: linear-gradient(135deg, #0f172a 0%, #172554 55%, #1e3a8a 100%);
         color: #fff;
@@ -141,6 +375,21 @@
       .ai-wake { color:#93c5fd; font-weight:600; }
 
       @media(max-width:600px){
+        .ai-sidebar { top:auto; bottom:20px; transform:none; }
+        .ai-sidebar-tab { min-height:64px; width:64px; border-radius:16px 0 0 16px; }
+        .ai-sidebar-tab:hover,
+        .ai-sidebar.is-open .ai-sidebar-tab { width:68px; transform:none; }
+        .ai-copilot-panel {
+          right:58px;
+          top:auto;
+          bottom:0;
+          transform:translate(12px,0) scale(.985);
+          width:min(360px, calc(100vw - 82px));
+        }
+        .ai-sidebar:hover .ai-copilot-panel { transform:translate(12px,0) scale(.985); }
+        .ai-sidebar.is-open .ai-copilot-panel {
+          transform:translate(0,0) scale(1);
+        }
         .ai-input-row { grid-template-columns:1fr auto; }
         .ai-input-row .send { grid-column:2; grid-row:1; }
         .ai-input-row input { grid-column:1; grid-row:1; }
@@ -326,8 +575,52 @@
     <div id="app-view" class="app-container">
       <header style="position:relative;z-index:10;">
         <div class="brand-group">
-          <div class="brand">
-            <span style="background:var(--primary); color:white; padding:4px 8px; border-radius:6px;">WMS</span> WMS Warehouse Management System
+          <div class="brand" aria-label="WMS Warehouse Management System">
+            <span class="brand-mark" aria-hidden="true">
+              <svg class="brand-logo-svg" viewBox="0 0 64 64" role="img" aria-label="WMS crane logo">
+                <defs>
+                  <linearGradient id="wmsBlue" x1="10" y1="8" x2="55" y2="58" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#5bb7ff"/>
+                    <stop offset=".45" stop-color="#1677ff"/>
+                    <stop offset="1" stop-color="#0b2a78"/>
+                  </linearGradient>
+                  <linearGradient id="wmsShine" x1="8" y1="8" x2="52" y2="52" gradientUnits="userSpaceOnUse">
+                    <stop offset="0" stop-color="#ffffff" stop-opacity=".34"/>
+                    <stop offset=".55" stop-color="#ffffff" stop-opacity=".04"/>
+                    <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+
+                <!-- premium blue tile -->
+                <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#wmsBlue)"/>
+                <rect x="2.5" y="2.5" width="59" height="59" rx="16.5"
+                      fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1"/>
+                <path d="M8 15 C18 5, 34 4, 47 10 C54 13,57 18,58 23 L58 8 L8 8 Z"
+                      fill="url(#wmsShine)"/>
+
+                <!-- crane boom -->
+                <path d="M12 20 H43" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+                <path d="M38 20 L47 11" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+                <path d="M47 11 H55" fill="none" stroke="#dbeafe" stroke-width="2.4" stroke-linecap="round"/>
+                <path d="M47 12 V25" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round"/>
+                <path d="M47 25 C47 29,44 31,41 31 C38 31,36 29,36 26"
+                      fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/>
+                <path d="M36 26 C36 30,39 33,43 33 C47 33,50 30,50 26"
+                      fill="none" stroke="#dbeafe" stroke-width="2.2" stroke-linecap="round"/>
+
+                <!-- WMS -->
+                <text x="8.5" y="48" fill="#fff"
+                      font-family="'Samsung Sharp Sans','SamsungOne','Space Grotesk','Inter',Arial,sans-serif"
+                      font-size="18" font-weight="800" letter-spacing="1.2">WMS</text>
+
+                <!-- subtle warehouse floor/grid -->
+                <path d="M9 53 H55 M16 53 V57 M29 53 V57 M42 53 V57"
+                      fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1.2"/>
+              </svg>
+            </span>
+            <span class="brand-copy">
+              <span class="brand-subtitle">WAREHOUSE MANAGEMENT SYSTEM</span>
+            </span>
           </div>
         </div>
         <nav class="nav-tabs">
@@ -339,35 +632,53 @@
 
       <section id="page-entry" class="page-section active">
 
-        <div class="ai-copilot" id="aiCopilot">
-          <div class="ai-head">
-            <div class="ai-title"><span style="font-size:20px;">🤖</span> WMS AI Copilot</div>
-            <div class="ai-status"><span class="ai-dot"></span><span id="aiStatus">Siap membantu</span></div>
-          </div>
-          <div class="ai-chat" id="aiChat" aria-live="polite">
-            <div class="ai-msg assistant">
-              <div class="ai-bubble">Halo Pak. Saya WMS AI Copilot. Silakan tanya stok, FIFO, aging, transaksi, atau gunakan tombol 🎙️ untuk berbicara.</div>
+        <!-- WMS AI Copilot: compact sidebar launcher + hover/click pop-up -->
+        <aside class="ai-sidebar" id="aiSidebar" aria-label="WMS AI Copilot">
+          <button type="button" class="ai-sidebar-tab" id="aiSidebarTab"
+                  aria-expanded="false" aria-controls="aiCopilotPanel"
+                  title="WMS AI Copilot">
+            <span class="ai-sidebar-icon">🤖</span>
+            <span class="ai-sidebar-label">AI<br>Copilot</span>
+          </button>
+
+          <div class="ai-copilot-panel" id="aiCopilotPanel" aria-hidden="true">
+            <div class="ai-copilot" id="aiCopilot">
+              <div class="ai-head">
+                <div class="ai-title"><span style="font-size:20px;">🤖</span> WMS AI Copilot</div>
+                <div class="ai-panel-actions">
+                  <div class="ai-status"><span class="ai-dot"></span><span id="aiStatus">Siap membantu</span></div>
+                  <button type="button" class="ai-panel-close" id="aiCopilotClose" title="Tutup">×</button>
+                </div>
+              </div>
+
+              <div class="ai-chat" id="aiChat" aria-live="polite">
+                <div class="ai-msg assistant">
+                  <div class="ai-bubble">Halo Pak. Saya WMS AI Copilot. Silakan tanya stok, FIFO, aging, transaksi, atau gunakan tombol 🎙️ untuk berbicara.</div>
+                </div>
+              </div>
+
+              <div class="ai-input-row">
+                <input id="aiInput" type="text" autocomplete="off"
+                  placeholder="Contoh: stok D-2 berapa? atau keluarkan 500 zak D-2">
+                <button type="button" class="ai-btn send" id="aiSendBtn" title="Kirim">➤</button>
+                <button type="button" class="ai-btn" id="aiVoiceBtn" title="Perintah suara">🎙️</button>
+              </div>
+
+              <div class="ai-config">
+                <span class="ai-wake">Halo WMS</span> aktif. Ucapkan <b>“Halo WMS”</b> untuk memulai percakapan.
+                <span id="aiApiState"> | AI API: belum terhubung</span>
+              </div>
+
+              <div class="ai-suggestions">
+                <button type="button" class="ai-chip" data-ai="Stok SKU paling tua sekarang apa?">📦 Stok tertua</button>
+                <button type="button" class="ai-chip" data-ai="Cek kondisi stok hari ini">📊 Cek stok</button>
+                <button type="button" class="ai-chip" data-ai="Rekomendasikan FIFO untuk SKU D-2">🔄 Rekomendasi FIFO</button>
+                <button type="button" class="ai-chip" data-ai="Ada stok yang berisiko habis?">🚨 Risiko stock out</button>
+              </div>
             </div>
           </div>
-          <div class="ai-input-row">
-            <input id="aiInput" type="text" autocomplete="off"
-              placeholder="Contoh: stok D-2 berapa? atau keluarkan 500 zak D-2">
-            <button type="button" class="ai-btn send" id="aiSendBtn" title="Kirim">➤</button>
-            <button type="button" class="ai-btn" id="aiVoiceBtn" title="Perintah suara">🎙️</button>
-          </div>
+        </aside>
 
-          <div class="ai-config">
-            <span class="ai-wake">Halo WMS</span> aktif. Ucapkan <b>“Halo WMS”</b> untuk memulai percakapan.
-            <span id="aiApiState"> | AI API: belum terhubung</span>
-          </div>
-
-          <div class="ai-suggestions">
-            <button type="button" class="ai-chip" data-ai="Stok SKU paling tua sekarang apa?">📦 Stok tertua</button>
-            <button type="button" class="ai-chip" data-ai="Cek kondisi stok hari ini">📊 Cek stok</button>
-            <button type="button" class="ai-chip" data-ai="Rekomendasikan FIFO untuk SKU D-2">🔄 Rekomendasi FIFO</button>
-            <button type="button" class="ai-chip" data-ai="Ada stok yang berisiko habis?">🚨 Risiko stock out</button>
-          </div>
-        </div>
         <div class="card">
           <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
             <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">1. DATA UMUM</div>
@@ -496,26 +807,46 @@
 
           <div class="form-row">
             <div>
-              <label>SKU / Item Code</label>
-              <input type="text" id="masterSku" placeholder="Contoh: 121-701-0007" autocomplete="off">
-            </div>
-            <div>
-              <label>Segment</label>
-              <select id="masterSegment">
+              <label>Segment <span class="required-mark">*</span></label>
+              <select id="masterSegment" required>
                 <option value="">Pilih Segment</option>
                 <option value="Retail">Retail</option>
                 <option value="Project">Project</option>
                 <option value="General">General</option>
               </select>
             </div>
+            <div>
+              <label>SKU / Item Code <span class="required-mark">*</span></label>
+              <input type="text" id="masterSku" placeholder="Contoh: 121-701-0007" autocomplete="off" required>
+            </div>
           </div>
 
           <div class="form-row">
             <div style="grid-column:1/-1;">
-              <label>Deskripsi Produk</label>
-              <input type="text" id="masterDesc" placeholder="Masukkan deskripsi produk" autocomplete="off">
+              <label>Description <span class="required-mark">*</span></label>
+              <input type="text" id="masterDesc" placeholder="Masukkan deskripsi produk" autocomplete="off" required>
             </div>
           </div>
+
+          <div class="form-row">
+            <div>
+              <label>UOM <span class="required-mark">*</span></label>
+              <select id="masterUom" required>
+                <option value="">Pilih UOM</option>
+                <option value="ZAK">ZAK</option>
+                <option value="BOX">BOX</option>
+                <option value="PCS">PCS</option>
+                <option value="UNIT">UNIT</option>
+              </select>
+            </div>
+            <div>
+              <label>Weight per Zak (kg) <span class="required-mark">*</span></label>
+              <input type="number" id="masterWeight" min="0.01" step="0.01"
+                     placeholder="Contoh: 40" inputmode="decimal" required>
+            </div>
+          </div>
+
+          <div class="required-note"><span class="required-mark">*</span> Wajib diisi</div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button onclick="addMasterItem()" class="btn-primary" style="width:auto; padding:12px 22px;">
@@ -535,10 +866,10 @@
           <div class="table-wrapper">
             <table id="masterPreviewTable">
               <thead>
-                <tr><th>No</th><th>SKU</th><th>Deskripsi</th><th>Segment</th></tr>
+                <tr><th>No</th><th>Segment</th><th>SKU / Item Code</th><th>Description</th><th>UOM</th><th>Weight / Zak (kg)</th></tr>
               </thead>
               <tbody>
-                <tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Belum ada data</td></tr>
+                <tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">Belum ada data</td></tr>
               </tbody>
             </table>
           </div>
@@ -959,6 +1290,22 @@
         return n.toLocaleString('id-ID', { maximumFractionDigits: 2 });
       }
 
+      function isMatrixReadOnlyTransaction(row) {
+        const candidates = [
+          row?.transType, row?.transactionType, row?.type,
+          row?.transaction, row?.transaksi, row?.movementType,
+          row?.description, row?.label
+        ];
+        return candidates.some(v => {
+          const s = String(v ?? '').trim().toLowerCase().replace(/[_-]+/g, ' ');
+          return s === 'stock on hand' ||
+                 s === 'stok on hand' ||
+                 s === 'on hand' ||
+                 s.includes('stock on hand') ||
+                 s.includes('stok on hand');
+        });
+      }
+
       function matrixCellKey(rowIndex, date) {
         return `${rowIndex}__${date}`;
       }
@@ -1214,7 +1561,7 @@
                 rowTotal += value;
                 grandDayTotals[date] += value;
                 const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
-                html += `<td class="matrix-qty ${cls}" data-row="${originalIndex}" data-date="${date}" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
+                html += `<td class="matrix-qty ${isMatrixReadOnlyTransaction(row) ? "matrix-readonly" : ""} ${cls}" data-row="${originalIndex}" data-date="${date}" data-readonly="${isMatrixReadOnlyTransaction(row) ? "true" : "false"}" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
               });
 
               html += `<td style="text-align:right;font-weight:800;">${formatMatrixQty(rowTotal)}</td></tr>`;
@@ -2009,6 +2356,8 @@
         document.getElementById('masterSku').value = '';
         document.getElementById('masterDesc').value = '';
         document.getElementById('masterSegment').value = '';
+        document.getElementById('masterUom').value = '';
+        document.getElementById('masterWeight').value = '';
         document.getElementById('masterSku').focus();
       }
 
@@ -2028,9 +2377,11 @@
         tbody.innerHTML = preview.map((m, i) =>
           `<tr>
             <td>${i + 1}</td>
-            <td>${m.sku || '-'}</td>
-            <td>${m.desc || '-'}</td>
             <td>${m.segment || '-'}</td>
+            <td>${m.sku || '-'}</td>
+            <td>${m.desc || m.description || '-'}</td>
+            <td>${m.uom || m.UOM || '-'}</td>
+            <td>${m.weight ?? m.weightPerZak ?? m.weight_per_zak ?? '-'}</td>
           </tr>`
         ).join('');
       }
@@ -2038,10 +2389,15 @@
       async function addMasterItem() {
         const sku = document.getElementById('masterSku').value.trim();
         const desc = document.getElementById('masterDesc').value.trim();
-        const segment = document.getElementById('masterSegment').value;
+        const segment = document.getElementById('masterSegment').value.trim();
+        const uom = document.getElementById('masterUom').value.trim().toUpperCase();
+        const weight = Number(document.getElementById('masterWeight').value);
 
-        if (!sku || !desc || !segment) {
-          showAlert('Perhatian', 'SKU, Deskripsi Produk, dan Segment wajib diisi.');
+        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0) {
+          showAlert(
+            'Data Belum Lengkap',
+            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, dan <b>Weight per Zak</b>.'
+          );
           return;
         }
 
@@ -2056,31 +2412,47 @@
 
         showConfirm(
           `Tambahkan item berikut ke Master Data?<br><br>
-           <b>${sku}</b><br>
-           ${desc}<br>
-           Segment: ${segment}`,
+           <b>${escapeHtml(sku)}</b><br>
+           ${escapeHtml(desc)}<br>
+           Segment: ${escapeHtml(segment)}<br>
+           UOM: ${escapeHtml(uom)}<br>
+           Weight per Zak: ${weight.toLocaleString('id-ID')} kg`,
           async () => {
             showLoading(true);
 
             const res = await apiCall('addMasterData', {
               sku: sku,
               desc: desc,
-              segment: segment
+              description: desc,
+              segment: segment,
+              uom: uom,
+              weight: weight,
+              weightPerZak: weight
             });
 
             showLoading(false);
 
             if (res && res.status === 'success') {
-              masterData.push({ sku: sku, desc: desc, segment: segment });
+              masterData.push({
+                sku: sku,
+                desc: desc,
+                description: desc,
+                segment: segment,
+                uom: uom,
+                weight: weight,
+                weightPerZak: weight
+              });
               renderMasterPreview();
               resetMasterForm();
-              showAlert('Berhasil', `SKU <b>${sku}</b> berhasil ditambahkan ke Master Data.`);
+              playUiSound('save');
+              showAlert('Berhasil', `SKU <b>${escapeHtml(sku)}</b> berhasil ditambahkan ke Master Data.`);
             } else {
               showAlert('Gagal', res?.message || 'Gagal menambahkan item ke Master Data.');
             }
           }
         );
       }
+
 
 
       /* ================================
@@ -2321,6 +2693,166 @@ async function localAiReasoning(userText) {
         return false;
       }
 
+
+      // Centralized UI sound engine.
+      // Sounds are generated with Web Audio API so no external audio files are needed.
+      const WMS_UI_SOUND = (() => {
+        let ctx = null;
+        let unlocked = false;
+        let lastAt = 0;
+
+        function getContext() {
+          if (!ctx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (!AC) return null;
+            try { ctx = new AC(); } catch (_) { return null; }
+          }
+          return ctx;
+        }
+
+        function unlock() {
+          const c = getContext();
+          if (!c) return;
+          unlocked = true;
+          if (c.state === 'suspended') c.resume().catch(() => {});
+        }
+
+        function beep(type = 'success') {
+          const now = performance.now();
+          if (now - lastAt < 90) return;
+          lastAt = now;
+
+          const c = getContext();
+          if (!c || !unlocked) return;
+          if (c.state === 'suspended') {
+            c.resume().catch(() => {});
+            return;
+          }
+
+          const osc = c.createOscillator();
+          const gain = c.createGain();
+          const filter = c.createBiquadFilter();
+
+          osc.type = type === 'error' ? 'square' : 'sine';
+          filter.type = 'lowpass';
+          filter.frequency.value = type === 'save' ? 2200 : 1700;
+          filter.Q.value = 0.4;
+
+          const t = c.currentTime;
+          let f1 = 620, f2 = 820, dur = 0.08;
+          if (type === 'save') { f1 = 720; f2 = 1040; dur = 0.13; }
+          if (type === 'input') { f1 = 480; f2 = 560; dur = 0.055; }
+          if (type === 'click') { f1 = 540; f2 = 650; dur = 0.045; }
+          if (type === 'error') { f1 = 420; f2 = 240; dur = 0.12; }
+
+          osc.frequency.setValueAtTime(f1, t);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(80, f2), t + dur);
+          gain.gain.setValueAtTime(0.0001, t);
+          gain.gain.exponentialRampToValueAtTime(0.045, t + 0.008);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+          osc.connect(filter);
+          filter.connect(gain);
+          gain.connect(c.destination);
+
+          osc.start(t);
+          osc.stop(t + dur + 0.015);
+        }
+
+        return { unlock, beep };
+      })();
+
+      function playUiSound(type) {
+        try { WMS_UI_SOUND.beep(type); } catch (_) {}
+      }
+
+      // Browsers block audio until the user interacts with the page.
+      // Unlock on the first meaningful interaction; no audio autoplay is forced.
+      ['pointerdown', 'keydown', 'touchstart'].forEach(evt => {
+        document.addEventListener(evt, () => WMS_UI_SOUND.unlock(), { once: true, capture: true });
+      });
+
+      function initWmsUiSounds() {
+        // Form/input feedback
+        document.addEventListener('change', (e) => {
+          if (e.target.matches('input, select, textarea')) playUiSound('input');
+        }, true);
+
+        // Generic button feedback, excluding noisy navigation and AI typing.
+        document.addEventListener('click', (e) => {
+          const btn = e.target.closest('button, [role="button"]');
+          if (!btn) return;
+          if (
+            btn.closest('#aiChat') ||
+            btn.id === 'aiVoiceBtn' ||
+            btn.classList.contains('ai-chip')
+          ) return;
+
+          if (
+            btn.id === 'matrixQtySave' ||
+            /simpan|save|submit|proses|confirm|konfirmasi/i.test(btn.textContent || '')
+          ) {
+            playUiSound('save');
+          } else {
+            playUiSound('click');
+          }
+        }, true);
+
+        // Global success/error toast hooks.
+        const originalShowAlert = window.showAlert;
+        if (typeof originalShowAlert === 'function' && !window.__wmsShowAlertWrapped) {
+          window.showAlert = function(title, message, ...args) {
+            const text = `${title || ''} ${message || ''}`;
+            playUiSound(/gagal|error|failed|tidak berhasil/i.test(text) ? 'error' : 'success');
+            return originalShowAlert.call(this, title, message, ...args);
+          };
+          window.__wmsShowAlertWrapped = true;
+        }
+      }
+
+      function initAiCopilotSidebar() {
+        const sidebar = document.getElementById('aiSidebar');
+        const tab = document.getElementById('aiSidebarTab');
+        const panel = document.getElementById('aiCopilotPanel');
+        const close = document.getElementById('aiCopilotClose');
+        if (!sidebar || !tab || !panel) return;
+
+        let pinned = false;
+
+        const setOpen = (open) => {
+          pinned = !!open;
+          sidebar.classList.toggle('is-open', pinned);
+          tab.setAttribute('aria-expanded', pinned ? 'true' : 'false');
+          panel.setAttribute('aria-hidden', pinned ? 'false' : 'true');
+        };
+
+        tab.addEventListener('click', (e) => {
+          e.preventDefault();
+          setOpen(!pinned);
+          if (pinned) {
+            setTimeout(() => document.getElementById('aiInput')?.focus(), 80);
+          }
+        });
+
+        close?.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setOpen(false);
+        });
+
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'Escape' && pinned) setOpen(false);
+        });
+
+        // Hover opens as a preview. Clicking pins the panel open.
+        sidebar.addEventListener('mouseenter', () => {
+          if (!pinned) sidebar.classList.add('is-open');
+        });
+        sidebar.addEventListener('mouseleave', () => {
+          if (!pinned) sidebar.classList.remove('is-open');
+        });
+      }
+
       function initVoiceAssistant() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const btn = document.getElementById('aiVoiceBtn');
@@ -2417,6 +2949,10 @@ async function localAiReasoning(userText) {
               }, 200);
           });
       }
-    </script>
+    
+      initAiCopilotSidebar();
+
+      initWmsUiSounds();
+</script>
   </body>
 </html>
