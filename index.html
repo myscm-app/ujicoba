@@ -756,80 +756,191 @@
       let stockTransactionMatrixData = { dates: [], rows: [] };
       let matrixDirtyChanges = {};
       
-      const DAILY_WISDOM = [
-        {
-          text: 'Langkah yang tenang sering membawa kita lebih jauh daripada langkah yang tergesa-gesa.',
-          author: 'Terinspirasi dari Laozi'
-        },
-        {
-          text: 'Perbaikan kecil yang dilakukan dengan tekun dapat mengubah hasil besar.',
-          author: 'Terinspirasi dari Konfusius'
-        },
-        {
-          text: 'Mengetahui apa yang cukup membuat perjalanan menjadi lebih ringan.',
-          author: 'Terinspirasi dari Laozi'
-        },
-        {
-          text: 'Orang yang belajar dari kesalahan hari ini sedang menyiapkan keberhasilan esok.',
-          author: 'Terinspirasi dari Konfusius'
-        },
-        {
-          text: 'Saat keadaan berubah, kebijaksanaan adalah kemampuan untuk menyesuaikan langkah.',
-          author: 'Terinspirasi dari Zhuangzi'
-        },
-        {
-          text: 'Kejelasan lahir ketika kita berhenti menambah keributan yang tidak perlu.',
-          author: 'Terinspirasi dari Zhuangzi'
-        },
-        {
-          text: 'Kemenangan yang baik dimulai dari memahami keadaan sebelum bertindak.',
-          author: 'Terinspirasi dari Sun Tzu'
-        },
-        {
-          text: 'Yang kuat tidak selalu yang paling keras; kadang ia yang paling mampu menahan diri.',
-          author: 'Terinspirasi dari Laozi'
-        },
-        {
-          text: 'Pengetahuan menjadi berguna ketika diterapkan dengan disiplin.',
-          author: 'Terinspirasi dari Sun Tzu'
-        },
-        {
-          text: 'Kesabaran bukan berhenti bergerak, melainkan bergerak tanpa kehilangan arah.',
-          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
-        },
-        {
-          text: 'Ketika pikiran jernih, keputusan sederhana menjadi lebih mudah terlihat.',
-          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
-        },
-        {
-          text: 'Jangan hanya menghitung seberapa cepat; pastikan juga arah yang dituju benar.',
-          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
-        },
-        {
-          text: 'Kebiasaan yang baik dibangun dari keputusan kecil yang diulang setiap hari.',
-          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
-        },
-        {
-          text: 'Menata hal kecil dengan rapi adalah cara sederhana menjaga hal besar tetap terkendali.',
-          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
-        }
-      ];
+      // ================================================================
+      // AI WISDOM HARIAN
+      // - Tidak memakai daftar pendek yang mengulang setiap 14 hari.
+      // - Coba ambil kalimat orisinal dari AI Server.
+      // - Jika AI tidak tersedia, fallback menghasilkan kombinasi harian
+      //   berbasis tanggal sehingga tidak mengulang cepat.
+      // ================================================================
+      const WISDOM_FALLBACK = {
+        subjects: [
+          'pikiran yang jernih',
+          'kesabaran yang terarah',
+          'disiplin dalam tindakan',
+          'kesederhanaan dalam bekerja',
+          'keberanian untuk menyesuaikan diri',
+          'ketekunan dalam belajar',
+          'ketelitian dalam keputusan',
+          'ketenangan saat menghadapi perubahan',
+          'kemampuan untuk menahan diri',
+          'kebiasaan memperbaiki hal kecil',
+          'keseimbangan antara cepat dan tepat',
+          'kerendahan hati untuk terus belajar',
+          'kejelasan sebelum bertindak',
+          'konsistensi dalam menjalankan proses'
+        ],
+        actions: [
+          'sering lebih berharga daripada tergesa-gesa.',
+          'membantu melihat jalan ketika keadaan berubah.',
+          'membuat langkah sederhana menjadi lebih kuat.',
+          'menjaga hasil besar tetap dimulai dari hal kecil.',
+          'membuat keputusan menjadi lebih ringan dan terukur.',
+          'mengubah kesalahan menjadi bahan untuk bertumbuh.',
+          'menjaga arah ketika banyak hal menarik perhatian.',
+          'membuat seseorang kuat tanpa harus menjadi keras.',
+          'mengajarkan kapan harus maju dan kapan harus menunggu.',
+          'membantu kita bekerja dengan tenang tanpa kehilangan tujuan.',
+          'membuat perubahan menjadi bagian dari perjalanan, bukan hambatan.',
+          'membuka ruang untuk belajar sebelum merasa sudah tahu.'
+        ],
+        endings: [
+          'Yang penting bukan hanya bergerak, tetapi tahu ke mana.',
+          'Langkah kecil yang konsisten sering mengalahkan niat besar yang tidak dijalankan.',
+          'Ketepatan arah memberi nilai pada kecepatan.',
+          'Ketenangan bukan berarti diam; ia berarti bergerak tanpa kehilangan kendali.',
+          'Setiap hari adalah kesempatan untuk merapikan satu hal lagi.',
+          'Belajar dari keadaan membuat keputusan berikutnya lebih matang.',
+          'Hal yang sederhana akan kuat ketika dilakukan dengan disiplin.',
+          'Menahan diri pada saat yang tepat adalah bagian dari kebijaksanaan.',
+          'Perubahan menjadi ringan ketika kita tidak melawan kenyataan.',
+          'Pekerjaan yang rapi dimulai dari perhatian pada detail kecil.'
+        ]
+      };
 
-      function showDailyWisdom() {
-        const textEl = document.getElementById('wisdomText');
-        const authorEl = document.getElementById('wisdomAuthor');
-        if (!textEl || !authorEl) return;
-
-        const now = new Date();
-        const start = new Date(now.getFullYear(), 0, 0);
-        const dayOfYear = Math.floor((now - start) / 86400000);
-        const item = DAILY_WISDOM[(dayOfYear - 1) % DAILY_WISDOM.length];
-
-        textEl.textContent = '“' + item.text + '”';
-        authorEl.textContent = '— ' + item.author;
+      function dayNumberForWisdom(dateObj = new Date()) {
+        const y = dateObj.getFullYear();
+        const start = new Date(y, 0, 1);
+        return Math.floor((dateObj - start) / 86400000) + 1;
       }
 
-      showDailyWisdom();
+      function hashString(str) {
+        let h = 2166136261;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 16777619);
+        }
+        return h >>> 0;
+      }
+
+      function fallbackDailyWisdom(dateKey) {
+        const n = hashString(dateKey);
+        const subject = WISDOM_FALLBACK.subjects[n % WISDOM_FALLBACK.subjects.length];
+        const action = WISDOM_FALLBACK.actions[Math.floor(n / 17) % WISDOM_FALLBACK.actions.length];
+        const ending = WISDOM_FALLBACK.endings[Math.floor(n / 97) % WISDOM_FALLBACK.endings.length];
+
+        return {
+          text: `${capitalizeFirst(subject)} ${action} ${ending}`,
+          author: 'AI Wisdom — terinspirasi filsafat Tiongkok'
+        };
+      }
+
+      function capitalizeFirst(text) {
+        return text ? text.charAt(0).toUpperCase() + text.slice(1) : text;
+      }
+
+      function getLocalDateKey() {
+        const d = new Date();
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+
+      function renderWisdom(item) {
+        const textEl = document.getElementById('wisdomText');
+        const authorEl = document.getElementById('wisdomAuthor');
+        if (!textEl || !authorEl || !item) return;
+
+        textEl.textContent = '“' + item.text + '”';
+        authorEl.textContent = '— ' + (item.author || 'AI Wisdom');
+      }
+
+      async function loadDailyWisdom() {
+        const dateKey = getLocalDateKey();
+
+        // Fallback langsung tampil supaya loading tidak menunggu API.
+        const fallback = fallbackDailyWisdom(dateKey);
+        renderWisdom(fallback);
+
+        // Pakai cache harian agar 1 hari tidak memanggil AI berulang-ulang.
+        try {
+          const cachedRaw = localStorage.getItem('wms_ai_wisdom_' + dateKey);
+          if (cachedRaw) {
+            const cached = JSON.parse(cachedRaw);
+            if (cached && cached.text) renderWisdom(cached);
+            return;
+          }
+        } catch (e) {}
+
+        // AI Server hanya dipanggil bila tersedia.
+        const aiUrl = (typeof AI_SERVER_URL !== 'undefined') ? AI_SERVER_URL : '';
+        if (!aiUrl) return;
+
+        try {
+          const prompt =
+            `Buat SATU kalimat kebijaksanaan orisinal dalam bahasa Indonesia, ` +
+            `panjang 15-28 kata, terinspirasi nilai filsafat Tiongkok klasik ` +
+            `(misalnya ketenangan, disiplin, keseimbangan, belajar, adaptasi), ` +
+            `tetapi JANGAN mengutip atau mengaku sebagai kutipan tokoh tertentu. ` +
+            `Kalimat harus berbeda dari hari sebelumnya dan tidak menyebut "AI".`;
+
+          const response = await fetch(aiUrl, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'aiChat',
+              message: prompt,
+              history: [],
+              stockSummary: {},
+              masterData: [],
+              systemPrompt:
+                'Anda membuat satu kebijaksanaan orisinal harian. Jangan mengutip tokoh nyata. ' +
+                'Jawab hanya kalimat kebijaksanaan tanpa tanda kutip dan tanpa penjelasan.'
+            })
+          });
+
+          if (!response.ok) return;
+
+          const data = await response.json();
+          const aiText =
+            data?.reply ||
+            data?.message ||
+            data?.text ||
+            data?.output ||
+            '';
+
+          if (typeof aiText !== 'string' || !aiText.trim()) return;
+
+          const clean = aiText
+            .replace(/^["“”]+|["“”]+$/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+
+          if (!clean) return;
+
+          const item = {
+            text: clean,
+            author: 'AI Wisdom — terinspirasi filsafat Tiongkok'
+          };
+
+          localStorage.setItem(
+            'wms_ai_wisdom_' + dateKey,
+            JSON.stringify(item)
+          );
+
+          renderWisdom(item);
+
+        } catch (e) {
+          // Fallback sudah tampil; jangan ganggu loading WMS.
+          console.info('AI Wisdom fallback:', e);
+        }
+      }
+
+      // Satu wisdom baru setiap tanggal, dan AI dapat memperbaruinya tanpa
+      // memperlambat proses loading.
+      loadDailyWisdom();
 
       function showAlert(title, message) {
         const oldToast = document.getElementById('wms-clean-toast');
