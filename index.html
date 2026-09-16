@@ -942,16 +942,32 @@
         input.select();
 
         let finished = false;
-        const finish = (save) => {
+
+        const restoreConfirmButtonLabels = () => {
+          const ok = document.getElementById('btn-confirm-ok');
+          const cancel = document.getElementById('btn-confirm-cancel');
+          if (ok) ok.textContent = 'Ya, Lanjutkan';
+          if (cancel) cancel.textContent = 'Batal';
+        };
+
+        const cancelEdit = () => {
+          if (finished) return;
+          finished = true;
+          renderStockTransactionMatrix();
+          updateMatrixEditCount();
+          restoreConfirmButtonLabels();
+        };
+
+        const commitEdit = (newValue) => {
           if (finished) return;
           finished = true;
 
-          let newValue = Number(input.value);
           if (!Number.isFinite(newValue)) newValue = oldValue;
 
-          if (save && newValue !== oldValue) {
+          if (newValue !== oldValue) {
             if (!row.values) row.values = {};
             row.values[date] = newValue;
+
             matrixDirtyChanges[matrixCellKey(ri, date)] = {
               rowIndex: ri,
               date: date,
@@ -964,13 +980,62 @@
 
           renderStockTransactionMatrix();
           updateMatrixEditCount();
+          restoreConfirmButtonLabels();
+        };
+
+        const askSave = () => {
+          let newValue = Number(input.value);
+          if (!Number.isFinite(newValue)) newValue = oldValue;
+
+          // Tidak ada perubahan -> langsung keluar tanpa popup.
+          if (newValue === oldValue) {
+            cancelEdit();
+            return;
+          }
+
+          const direction = newValue > oldValue ? 'menaikkan' : 'menurunkan';
+          const msg =
+            `<b>Konfirmasi Revisi Qty</b><br><br>` +
+            `${escapeHtml(row.sku || '')}<br>` +
+            `${escapeHtml(row.transType || row.type || row.transactionType || '')}<br>` +
+            `${formatMatrixQty(oldValue)} → <b>${formatMatrixQty(newValue)}</b>` +
+            `<br><br>Apakah Qty akan disimpan?`;
+
+          const modal = document.getElementById('custom-confirm');
+          const msgEl = document.getElementById('confirm-msg');
+          const btnOk = document.getElementById('btn-confirm-ok');
+          const btnCancel = document.getElementById('btn-confirm-cancel');
+
+          msgEl.innerHTML = msg;
+          btnOk.textContent = 'Simpan';
+          btnCancel.textContent = 'Batal';
+          modal.style.display = 'flex';
+
+          btnOk.onclick = () => {
+            modal.style.display = 'none';
+            commitEdit(newValue);
+          };
+
+          btnCancel.onclick = () => {
+            modal.style.display = 'none';
+            cancelEdit();
+          };
         };
 
         input.addEventListener('keydown', e => {
-          if (e.key === 'Enter') { e.preventDefault(); finish(true); }
-          if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            askSave();
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            cancelEdit();
+          }
         });
-        input.addEventListener('blur', () => finish(true));
+
+        // Jangan auto-save saat blur. Blur dapat terjadi ketika popup dibuka.
+        input.addEventListener('blur', () => {
+          // Sengaja kosong: keputusan Simpan/Batal dilakukan melalui popup.
+        });
       }
 
       function updateMatrixEditCount() {
