@@ -488,7 +488,7 @@
     <script>
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
-        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbyBDk9suu0ds6Pef8389EWuE3UFi1sWMDcT_8VuF5hrX9U7ye_XQth8BxAy81ct73ciWg/exec'; 
+        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec'; 
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
@@ -541,20 +541,28 @@
       }
 
       async function stockMatrixApiCall(action, payload = null, queryParams = null) {
-        // Gunakan POST untuk semua request Stock Matrix agar action dan parameter
-        // tidak pernah tercampur menjadi satu nilai query string.
+        // POST + query action sengaja dikirim sekaligus.
+        // Ini membuat Apps Script selalu menerima e.parameter.action,
+        // sementara body tetap membawa payload lengkap.
+        const params = Object.assign({}, queryParams || {}, { action: action });
+        const qs = new URLSearchParams(params).toString();
+        const url = STOCK_MATRIX_URL + '?' + qs;
         const body = Object.assign({}, payload || {}, queryParams || {}, { action: action });
+
         try {
-          const response = await fetch(STOCK_MATRIX_URL, {
+          const response = await fetch(url, {
             method: 'POST',
             mode: 'cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(body)
           });
+
           if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
+
           return await response.json();
+
         } catch (error) {
           console.error('Stock Matrix API error:', error);
           throw error;
