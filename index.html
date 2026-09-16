@@ -57,16 +57,192 @@
       td { padding: 12px; border-bottom: 1px solid var(--border); }
       
       /* Modals and Notifications */
-      #loading { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: none; justify-content: center; align-items: center; z-index: 999; }
-      .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      
-      #custom-notification { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 25px 40px; border-radius: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.2); z-index: 9999; text-align: center; display: none; transition: opacity 0.3s ease; border-top: 4px solid var(--primary); }
-      #custom-notification.active { display: block; animation: popIn 0.3s ease; }
-      @keyframes popIn { 0% { transform: translate(-50%, -40%); opacity: 0; } 100% { transform: translate(-50%, -50%); opacity: 1; } }
 
-      #custom-confirm { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:10000; justify-content:center; align-items:center; }
-      #custom-confirm .modal-box { background:white; padding:24px; border-radius:12px; max-width:350px; width: 90%; text-align:center; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: popIn 0.3s ease;}
+      #loading {
+        position: fixed;
+        inset: 0;
+        background: rgba(248,250,252,.94);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(5px);
+      }
+
+      .coffee-loading-card {
+        width: min(470px, 92vw);
+        padding: 28px 28px 24px;
+        text-align: center;
+        background: rgba(255,255,255,.98);
+        border: 1px solid #dbe4ef;
+        border-radius: 22px;
+        box-shadow: 0 24px 70px rgba(15,23,42,.18);
+        overflow: hidden;
+      }
+
+      .coffee-cup-wrap {
+        position: relative;
+        width: 150px;
+        height: 130px;
+        margin: 0 auto 8px;
+      }
+
+      .coffee-table {
+        position: absolute;
+        left: 18px;
+        right: 18px;
+        bottom: 18px;
+        height: 8px;
+        border-radius: 50%;
+        background: #cbd5e1;
+        opacity: .65;
+      }
+
+      .coffee-cup {
+        position: absolute;
+        left: 34px;
+        bottom: 26px;
+        width: 82px;
+        height: 60px;
+        border-radius: 10px 10px 28px 28px;
+        background: linear-gradient(#ffffff,#f1f5f9);
+        border: 4px solid #334155;
+        box-shadow: inset 0 -10px 0 rgba(148,163,184,.16), 0 8px 16px rgba(15,23,42,.12);
+        animation: cupBob 1.35s ease-in-out infinite;
+      }
+
+      .coffee-cup::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        top: 9px;
+        height: 13px;
+        border-radius: 50%;
+        background: #5b3825;
+        border: 3px solid #7c4a2d;
+        box-shadow: 0 2px 0 rgba(255,255,255,.5) inset;
+      }
+
+      .coffee-handle {
+        position: absolute;
+        right: -22px;
+        top: 15px;
+        width: 30px;
+        height: 30px;
+        border: 4px solid #334155;
+        border-left: 0;
+        border-radius: 0 18px 18px 0;
+        background: transparent;
+      }
+
+      .coffee-steam {
+        position: absolute;
+        top: 6px;
+        font-size: 28px;
+        color: #94a3b8;
+        opacity: .75;
+        filter: blur(.1px);
+      }
+
+      .coffee-steam.s1 { left: 52px; animation: steamFloat 2.5s ease-in-out infinite; }
+      .coffee-steam.s2 { left: 75px; animation: steamFloat 2.9s ease-in-out infinite .45s; }
+      .coffee-steam.s3 { left: 98px; animation: steamFloat 2.7s ease-in-out infinite .8s; }
+
+      .coffee-spark {
+        position: absolute;
+        font-size: 14px;
+        animation: sparkFloat 1.8s ease-in-out infinite;
+      }
+      .coffee-spark.a { left: 20px; top: 44px; }
+      .coffee-spark.b { right: 18px; top: 32px; animation-delay: .55s; }
+      .coffee-spark.c { right: 26px; bottom: 52px; animation-delay: .9s; }
+
+      .coffee-loading-title {
+        font-size: 17px;
+        font-weight: 900;
+        color: #0f172a;
+        margin: 4px 0 5px;
+      }
+
+      .coffee-loading-subtitle {
+        font-size: 11px;
+        color: #64748b;
+        margin: 0 0 14px;
+      }
+
+      .wisdom-box {
+        margin-top: 8px;
+        padding: 14px 16px;
+        border-radius: 14px;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+      }
+
+      .wisdom-label {
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #2563eb;
+        margin-bottom: 6px;
+      }
+
+      .wisdom-text {
+        font-size: 12px;
+        line-height: 1.6;
+        color: #334155;
+        min-height: 38px;
+      }
+
+      .wisdom-author {
+        margin-top: 7px;
+        font-size: 10px;
+        font-weight: 800;
+        color: #64748b;
+      }
+
+      .coffee-dots {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        margin-top: 13px;
+      }
+
+      .coffee-dots span {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #2563eb;
+        animation: coffeeDots 1s ease-in-out infinite;
+      }
+
+      .coffee-dots span:nth-child(2){ animation-delay:.15s; }
+      .coffee-dots span:nth-child(3){ animation-delay:.30s; }
+
+      @keyframes cupBob {
+        0%,100% { transform: translateY(0) rotate(-1deg); }
+        50% { transform: translateY(-5px) rotate(1deg); }
+      }
+
+      @keyframes steamFloat {
+        0% { transform: translateY(12px) scale(.75) rotate(-5deg); opacity: 0; }
+        25% { opacity: .65; }
+        60% { opacity: .55; }
+        100% { transform: translateY(-34px) scale(1.08) rotate(7deg); opacity: 0; }
+      }
+
+      @keyframes sparkFloat {
+        0%,100% { transform: translateY(0) scale(.8); opacity: .25; }
+        50% { transform: translateY(-8px) scale(1.1); opacity: .95; }
+      }
+
+      @keyframes coffeeDots {
+        0%,100% { transform: translateY(0); opacity: .35; }
+        50% { transform: translateY(-4px); opacity: 1; }
+      }
+
+
 
       
       /* Smart FIFO Recommendation Box */
@@ -240,7 +416,35 @@
     </style>
   </head>
   <body>
-    <div id="loading"><div class="spinner"></div></div>
+    <div id="loading">
+      <div class="coffee-loading-card">
+        <div class="coffee-cup-wrap" aria-hidden="true">
+          <div class="coffee-steam s1">♨</div>
+          <div class="coffee-steam s2">♨</div>
+          <div class="coffee-steam s3">♨</div>
+          <div class="coffee-spark a">✦</div>
+          <div class="coffee-spark b">✧</div>
+          <div class="coffee-spark c">✦</div>
+          <div class="coffee-cup">
+            <div class="coffee-handle"></div>
+          </div>
+          <div class="coffee-table"></div>
+        </div>
+
+        <div class="coffee-loading-title">Seduh dulu sebentar ☕</div>
+        <div class="coffee-loading-subtitle">WMS sedang mengolah data... sambil menikmati secangkir kopi.</div>
+
+        <div class="wisdom-box">
+          <div class="wisdom-label">AI Wisdom of the Day</div>
+          <div id="wisdomText" class="wisdom-text">Menyiapkan secangkir kebijaksanaan...</div>
+          <div id="wisdomAuthor" class="wisdom-author"></div>
+        </div>
+
+        <div class="coffee-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
     
     <div id="custom-notification">
       <h3 id="notif-title" style="margin-top:0; color: var(--primary);">Alert</h3>
@@ -510,6 +714,81 @@
       let stockTransactionMatrixData = { dates: [], rows: [] };
       let matrixDirtyChanges = {};
       
+      const DAILY_WISDOM = [
+        {
+          text: 'Langkah yang tenang sering membawa kita lebih jauh daripada langkah yang tergesa-gesa.',
+          author: 'Terinspirasi dari Laozi'
+        },
+        {
+          text: 'Perbaikan kecil yang dilakukan dengan tekun dapat mengubah hasil besar.',
+          author: 'Terinspirasi dari Konfusius'
+        },
+        {
+          text: 'Mengetahui apa yang cukup membuat perjalanan menjadi lebih ringan.',
+          author: 'Terinspirasi dari Laozi'
+        },
+        {
+          text: 'Orang yang belajar dari kesalahan hari ini sedang menyiapkan keberhasilan esok.',
+          author: 'Terinspirasi dari Konfusius'
+        },
+        {
+          text: 'Saat keadaan berubah, kebijaksanaan adalah kemampuan untuk menyesuaikan langkah.',
+          author: 'Terinspirasi dari Zhuangzi'
+        },
+        {
+          text: 'Kejelasan lahir ketika kita berhenti menambah keributan yang tidak perlu.',
+          author: 'Terinspirasi dari Zhuangzi'
+        },
+        {
+          text: 'Kemenangan yang baik dimulai dari memahami keadaan sebelum bertindak.',
+          author: 'Terinspirasi dari Sun Tzu'
+        },
+        {
+          text: 'Yang kuat tidak selalu yang paling keras; kadang ia yang paling mampu menahan diri.',
+          author: 'Terinspirasi dari Laozi'
+        },
+        {
+          text: 'Pengetahuan menjadi berguna ketika diterapkan dengan disiplin.',
+          author: 'Terinspirasi dari Sun Tzu'
+        },
+        {
+          text: 'Kesabaran bukan berhenti bergerak, melainkan bergerak tanpa kehilangan arah.',
+          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
+        },
+        {
+          text: 'Ketika pikiran jernih, keputusan sederhana menjadi lebih mudah terlihat.',
+          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
+        },
+        {
+          text: 'Jangan hanya menghitung seberapa cepat; pastikan juga arah yang dituju benar.',
+          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
+        },
+        {
+          text: 'Kebiasaan yang baik dibangun dari keputusan kecil yang diulang setiap hari.',
+          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
+        },
+        {
+          text: 'Menata hal kecil dengan rapi adalah cara sederhana menjaga hal besar tetap terkendali.',
+          author: 'AI Wisdom terinspirasi filsafat Tiongkok'
+        }
+      ];
+
+      function showDailyWisdom() {
+        const textEl = document.getElementById('wisdomText');
+        const authorEl = document.getElementById('wisdomAuthor');
+        if (!textEl || !authorEl) return;
+
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((now - start) / 86400000);
+        const item = DAILY_WISDOM[(dayOfYear - 1) % DAILY_WISDOM.length];
+
+        textEl.textContent = '“' + item.text + '”';
+        authorEl.textContent = '— ' + item.author;
+      }
+
+      showDailyWisdom();
+
       function showAlert(title, message) {
         document.getElementById('notif-title').innerText = title;
         document.getElementById('notif-message').innerHTML = message;
@@ -913,7 +1192,7 @@
                 rowTotal += value;
                 grandDayTotals[date] += value;
                 const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
-                html += `<td class="matrix-qty ${cls}" data-row="${originalIndex}" data-date="${date}" onclick="editMatrixQty(this)" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
+                html += `<td class="matrix-qty ${cls}" data-row="${originalIndex}" data-date="${date}" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
               });
 
               html += `<td style="text-align:right;font-weight:800;">${formatMatrixQty(rowTotal)}</td></tr>`;
@@ -933,6 +1212,26 @@
         body.innerHTML = html;
       }
 
+
+      // Delegated click handler: lebih andal daripada inline onclick,
+      // terutama setelah tbody di-render ulang secara dinamis.
+      document.addEventListener('click', function (event) {
+        const cell = event.target.closest('#stockTransactionMatrix td.matrix-qty');
+        if (!cell) return;
+
+        editMatrixQty(cell);
+      });
+
+      document.addEventListener('keydown', function (event) {
+        // Tombol Enter saat input editor aktif -> buka popup.
+        const input = event.target.closest('#stockTransactionMatrix td.matrix-qty input');
+        if (!input) return;
+
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      });
 
       async function editMatrixQty(cell) {
         if (!cell || cell.classList.contains('editing')) return;
@@ -1044,7 +1343,26 @@
           const btnSave = document.getElementById('matrixQtySave');
           const btnCancel = document.getElementById('matrixQtyCancel');
 
-          const direction = newValue > oldValue
+          // Fallback: bila modal HTML tidak terbaca, tetap tampilkan dialog
+          // konfirmasi agar perubahan tidak pernah tersimpan tanpa persetujuan.
+          if (!modal || !msgEl || !btnSave || !btnCancel) {
+            const approved = window.confirm(
+              `Konfirmasi Revisi Qty\n\n` +
+              `SKU: ${row.sku || ''}\n` +
+              `Transaksi: ${row.transType || row.type || row.transactionType || ''}\n` +
+              `Tanggal: ${date}\n` +
+              `Qty: ${oldValue} -> ${newValue}\n\n` +
+              `Simpan perubahan ini?`
+            );
+            if (approved) {
+              saveToBackend(newValue);
+            } else {
+              closeWithoutSave();
+            }
+            return;
+          }
+
+          const direction = newValue
             ? 'bertambah'
             : 'berkurang';
 
@@ -1087,10 +1405,13 @@
           if (finished || confirmationOpen) return;
 
           blurTimer = setTimeout(() => {
-            // Beri browser waktu berpindah fokus; jika user pindah ke tombol/modal,
-            // popup tetap ditampilkan.
-            openConfirm();
-          }, 120);
+            if (!finished && !confirmationOpen) openConfirm();
+          }, 180);
+        });
+
+        // Klik dua kali pada Qty juga langsung membuka konfirmasi setelah nilai diedit.
+        input.addEventListener('dblclick', () => {
+          if (!finished && !confirmationOpen) openConfirm();
         });
       }
 
