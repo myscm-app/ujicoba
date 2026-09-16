@@ -72,6 +72,78 @@
       /* Smart FIFO Recommendation Box */
       .fifo-box { background: #eff6ff; border: 1px dashed var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 15px; font-size: 12px; display: none; }
       .fifo-box.active { display: block; }
+
+      /* ================================
+         WMS AI COPILOT + VOICE ASSISTANT
+         ================================ */
+      .ai-copilot {
+        background: linear-gradient(135deg, #0f172a 0%, #172554 55%, #1e3a8a 100%);
+        color: #fff;
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 20px;
+        box-shadow: 0 10px 30px rgba(15,23,42,.18);
+      }
+      .ai-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+      .ai-title { display:flex; align-items:center; gap:10px; font-weight:700; }
+      .ai-status { font-size:11px; color:#cbd5e1; display:flex; align-items:center; gap:6px; }
+      .ai-dot { width:8px; height:8px; border-radius:50%; background:#10b981; box-shadow:0 0 0 4px rgba(16,185,129,.12); }
+      .ai-chat {
+        background:rgba(255,255,255,.08);
+        border:1px solid rgba(255,255,255,.12);
+        border-radius:12px;
+        padding:12px;
+        max-height:250px;
+        overflow:auto;
+        margin-bottom:12px;
+      }
+      .ai-msg { display:flex; margin:8px 0; }
+      .ai-msg.user { justify-content:flex-end; }
+      .ai-bubble {
+        max-width:85%;
+        padding:9px 12px;
+        border-radius:12px;
+        line-height:1.45;
+        font-size:13px;
+        white-space:pre-wrap;
+      }
+      .ai-msg.assistant .ai-bubble { background:rgba(255,255,255,.1); color:#e2e8f0; }
+      .ai-msg.user .ai-bubble { background:#2563eb; color:#fff; }
+      .ai-input-row { display:grid; grid-template-columns:1fr auto auto; gap:8px; }
+      .ai-input-row input {
+        background:#fff; color:#0f172a; border:none; min-width:0;
+      }
+      .ai-btn {
+        border:1px solid rgba(255,255,255,.18);
+        background:rgba(255,255,255,.1);
+        color:#fff;
+        border-radius:9px;
+        min-width:46px;
+        padding:10px 12px;
+        cursor:pointer;
+        font-weight:600;
+      }
+      .ai-btn:hover { background:rgba(255,255,255,.18); }
+      .ai-btn.listening { background:#dc2626; animation:voicePulse 1.2s infinite; }
+      .ai-btn.send { background:#2563eb; border-color:#2563eb; }
+      @keyframes voicePulse { 50% { box-shadow:0 0 0 8px rgba(220,38,38,.18); } }
+      .ai-suggestions { display:flex; flex-wrap:wrap; gap:7px; margin-top:10px; }
+      .ai-chip {
+        border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.06);
+        color:#cbd5e1; border-radius:999px; padding:6px 9px; font-size:11px; cursor:pointer;
+      }
+      .ai-chip:hover { background:rgba(255,255,255,.12); color:#fff; }
+      .ai-approval {
+        background:#f8fafc; color:#0f172a; border-radius:10px; padding:10px; margin-top:8px;
+        border-left:4px solid #2563eb; font-size:12px;
+      }
+      @media(max-width:600px){
+        .ai-input-row { grid-template-columns:1fr auto; }
+        .ai-input-row .send { grid-column:2; grid-row:1; }
+        .ai-input-row input { grid-column:1; grid-row:1; }
+        .ai-input-row #aiVoiceBtn { grid-column:1/-1; }
+      }
+
     </style>
   </head>
   <body>
@@ -107,6 +179,30 @@
       </header>
 
       <section id="page-entry" class="page-section active">
+
+        <div class="ai-copilot" id="aiCopilot">
+          <div class="ai-head">
+            <div class="ai-title"><span style="font-size:20px;">🤖</span> WMS AI Copilot</div>
+            <div class="ai-status"><span class="ai-dot"></span><span id="aiStatus">Siap membantu</span></div>
+          </div>
+          <div class="ai-chat" id="aiChat" aria-live="polite">
+            <div class="ai-msg assistant">
+              <div class="ai-bubble">Halo Pak. Saya WMS AI Copilot. Silakan tanya stok, FIFO, aging, transaksi, atau gunakan tombol 🎙️ untuk berbicara.</div>
+            </div>
+          </div>
+          <div class="ai-input-row">
+            <input id="aiInput" type="text" autocomplete="off"
+              placeholder="Contoh: stok D-2 berapa? atau keluarkan 500 zak D-2">
+            <button type="button" class="ai-btn send" id="aiSendBtn" title="Kirim">➤</button>
+            <button type="button" class="ai-btn" id="aiVoiceBtn" title="Perintah suara">🎙️</button>
+          </div>
+          <div class="ai-suggestions">
+            <button type="button" class="ai-chip" data-ai="Stok SKU paling tua sekarang apa?">📦 Stok tertua</button>
+            <button type="button" class="ai-chip" data-ai="Cek kondisi stok hari ini">📊 Cek stok</button>
+            <button type="button" class="ai-chip" data-ai="Rekomendasikan FIFO untuk SKU D-2">🔄 Rekomendasi FIFO</button>
+            <button type="button" class="ai-chip" data-ai="Ada stok yang berisiko habis?">🚨 Risiko stock out</button>
+          </div>
+        </div>
         <div class="card">
           <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px;">
             <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">1. DATA UMUM</div>
@@ -878,6 +974,254 @@
         );
       }
 
+
+      /* ================================
+         WMS AI COPILOT ENGINE
+         Voice input uses browser SpeechRecognition.
+         Voice output uses browser SpeechSynthesis.
+         Optional server-side AI can be enabled through AI_API_ACTION.
+         ================================ */
+      const AI_API_ACTION = 'aiChat';
+      let aiConversation = [];
+      let recognition = null;
+      let isListening = false;
+
+      function aiAddMessage(role, text) {
+        const chat = document.getElementById('aiChat');
+        if (!chat) return;
+        const wrap = document.createElement('div');
+        wrap.className = 'ai-msg ' + (role === 'user' ? 'user' : 'assistant');
+        const bubble = document.createElement('div');
+        bubble.className = 'ai-bubble';
+        bubble.textContent = text;
+        wrap.appendChild(bubble);
+        chat.appendChild(wrap);
+        chat.scrollTop = chat.scrollHeight;
+        aiConversation.push({role, content:text});
+      }
+
+      function aiSpeak(text) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const clean = String(text).replace(/[🤖📦📊🔄🚨🎙️✓]/g, '');
+        const u = new SpeechSynthesisUtterance(clean);
+        u.lang = 'id-ID';
+        u.rate = 0.96;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+      }
+
+      function aiSetStatus(text, busy=false) {
+        const el = document.getElementById('aiStatus');
+        if (el) el.textContent = text;
+        const dot = document.querySelector('.ai-dot');
+        if (dot) dot.style.background = busy ? '#f59e0b' : '#10b981';
+      }
+
+      function normalizeSkuText(text) {
+        const t = String(text || '').toLowerCase();
+        const candidates = (masterData || []).map(x => String(x.sku || ''));
+        let found = candidates.find(s => t.includes(s.toLowerCase()));
+        if (found) return found;
+        // Friendly shorthand: "d-2" / "d2" can match descriptions containing D-2.
+        const compact = t.replace(/[\s_-]/g,'');
+        const m = candidates.find(s => compact.includes(String(s).toLowerCase().replace(/[\s_-]/g,'')));
+        return m || null;
+      }
+
+      async function getFreshStock() {
+        const today = new Date().toISOString().split('T')[0];
+        const res = await apiCall(`getReportData&date=${today}`);
+        if (res && Array.isArray(res.summary)) {
+          cachedReportSummary = res.summary;
+          return res.summary;
+        }
+        return Array.isArray(cachedReportSummary) ? cachedReportSummary : [];
+      }
+
+      async function localAiReasoning(userText) {
+        const q = String(userText || '').trim();
+        const lower = q.toLowerCase();
+        if (!q) return 'Silakan sampaikan pertanyaannya, Pak.';
+
+        const sku = normalizeSkuText(q);
+
+        // Exact SKU stock query
+        if (sku && /(stok|stock|on.?hand|tersedia|jumlah)/i.test(lower)) {
+          aiSetStatus('Memeriksa stok…', true);
+          const summary = await getFreshStock();
+          const item = summary.find(x => String(x.sku).trim() === String(sku).trim());
+          const qty = item ? Number(item.qty || 0) : 0;
+          const desc = item?.desc || masterData.find(x => x.sku === sku)?.desc || sku;
+          aiSetStatus('Siap membantu');
+          return `Stok ${sku} saat ini ${qty.toLocaleString('id-ID')} Zak.\n${desc}`;
+        }
+
+        // FIFO query
+        if ((/fifo|lot tertua|bin tertua|ambil dari mana|keluarkan/i.test(lower)) && sku) {
+          aiSetStatus('Menganalisis FIFO…', true);
+          const res = await apiCall(`getFifoRecommendation&sku=${encodeURIComponent(sku)}`);
+          aiSetStatus('Siap membantu');
+          if (res && res.bin && res.bin !== '-') {
+            return `Untuk ${sku}, saya rekomendasikan BIN ${res.bin}, Lot ${res.lot}, dengan stok tersedia ${Number(res.qty||0).toLocaleString('id-ID')} Zak. Ini mengikuti rekomendasi FIFO stok tertua.`;
+          }
+          return `Saya belum menemukan alokasi FIFO untuk ${sku}. Silakan cek BIN dan Lot pada data stok.`;
+        }
+
+        // Generic stock overview
+        if (/(cek|lihat|kondisi|ringkas|summary).*(stok|stock)|stok.*(hari ini|sekarang)|stock.*(hari ini|sekarang)/i.test(lower)) {
+          aiSetStatus('Menganalisis stok…', true);
+          const summary = await getFreshStock();
+          const positive = summary.filter(x => Number(x.qty || 0) > 0);
+          const total = positive.reduce((s,x)=>s+Number(x.qty||0),0);
+          const oldest = positive.slice().sort((a,b)=>Number(b.maxAge||0)-Number(a.maxAge||0)).slice(0,3);
+          aiSetStatus('Siap membantu');
+          let answer = `Saat ini terdapat ${positive.length.toLocaleString('id-ID')} SKU dengan stok positif, total ${total.toLocaleString('id-ID')} Zak.`;
+          if (oldest.length) {
+            answer += '\nAging tertinggi yang terbaca: ' + oldest.map(x => `${x.sku} (${Number(x.maxAge||0)} hari)`).join(', ') + '.';
+          }
+          return answer;
+        }
+
+        // Stock-out risk based on status/age fields if supplied by report API
+        if (/(stock.?out|habis|risiko|risk|kritis|rawan)/i.test(lower)) {
+          aiSetStatus('Mendeteksi risiko…', true);
+          const summary = await getFreshStock();
+          const risk = summary.filter(x => {
+            const qn = Number(x.qty || 0);
+            const st = String(x.status || '').toLowerCase();
+            return qn <= 0 || /kritis|habis|risk|warning/.test(st);
+          }).slice(0,8);
+          aiSetStatus('Siap membantu');
+          if (!risk.length) return 'Saya belum menemukan SKU yang ditandai berisiko dari data laporan yang tersedia.';
+          return 'Saya menemukan beberapa SKU yang perlu diperhatikan: ' + risk.map(x => `${x.sku} (${Number(x.qty||0).toLocaleString('id-ID')} Zak${x.status ? ', '+x.status : ''})`).join('; ') + '.';
+        }
+
+        // Draft outbound command — never executes automatically.
+        const qtyMatch = lower.match(/(\d+(?:[.,]\d+)?)\s*(zak|pcs|unit)?/i);
+        if (sku && qtyMatch && /(keluar|keluarkan|delivery|sample|promo|jual|ambil)/i.test(lower)) {
+          const qty = Number(qtyMatch[1].replace(/\./g,'').replace(',','.')) || 0;
+          if (qty > 0) {
+            const summary = await getFreshStock();
+            const item = summary.find(x => String(x.sku).trim() === String(sku).trim());
+            const stock = Number(item?.qty || 0);
+            if (qty > stock) {
+              return `Saya tidak membuat transaksi karena ${qty.toLocaleString('id-ID')} Zak melebihi stok ${stock.toLocaleString('id-ID')} Zak.`;
+            }
+            return `Siap. Saya siapkan draft pengeluaran ${qty.toLocaleString('id-ID')} Zak untuk ${sku}. Stok saat ini ${stock.toLocaleString('id-ID')} Zak.\nTransaksi belum disimpan. Konfirmasi melalui form transaksi sebelum eksekusi.`;
+          }
+        }
+
+        // Optional server-side AI. This action must be implemented in Apps Script to use it.
+        try {
+          const context = {
+            message: q,
+            history: aiConversation.slice(-8),
+            stockSummary: Array.isArray(cachedReportSummary) ? cachedReportSummary.slice(0,200) : [],
+            masterData: Array.isArray(masterData) ? masterData.slice(0,500) : []
+          };
+          const server = await apiCall(AI_API_ACTION, context);
+          if (server && server.status === 'success' && server.reply) return String(server.reply);
+        } catch(e) {
+          console.warn('AI server fallback:', e);
+        }
+
+        return 'Saya memahami perintahnya, tetapi untuk pertanyaan tersebut saya belum memiliki aturan analisis yang sesuai. Coba tanyakan stok, FIFO, aging, risiko stock out, atau minta saya menyiapkan draft transaksi.';
+      }
+
+      async function aiAsk(text, speak=true) {
+        const q = String(text || '').trim();
+        if (!q) return;
+        aiAddMessage('user', q);
+        const input = document.getElementById('aiInput');
+        if (input) input.value = '';
+        aiSetStatus('Berpikir…', true);
+        try {
+          const reply = await localAiReasoning(q);
+          aiAddMessage('assistant', reply);
+          aiSetStatus('Siap membantu');
+          if (speak) aiSpeak(reply);
+        } catch(e) {
+          console.error(e);
+          const reply = 'Maaf Pak, saya gagal membaca data WMS saat ini. Silakan coba lagi.';
+          aiAddMessage('assistant', reply);
+          aiSetStatus('Terjadi kendala');
+          if (speak) aiSpeak(reply);
+        }
+      }
+
+      function initVoiceAssistant() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const btn = document.getElementById('aiVoiceBtn');
+        const input = document.getElementById('aiInput');
+        const send = document.getElementById('aiSendBtn');
+
+        if (send) send.addEventListener('click', () => aiAsk(input.value, true));
+        if (input) input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') aiAsk(input.value, true);
+        });
+        document.querySelectorAll('.ai-chip').forEach(chip => {
+          chip.addEventListener('click', () => aiAsk(chip.dataset.ai || '', true));
+        });
+
+        if (!btn) return;
+        if (!SpeechRecognition) {
+          btn.title = 'Voice input tidak didukung browser ini';
+          btn.addEventListener('click', () => {
+            aiAddMessage('assistant', 'Browser ini belum mendukung input suara. Coba Google Chrome atau Microsoft Edge.');
+          });
+          return;
+        }
+
+        recognition = new SpeechRecognition();
+        recognition.lang = 'id-ID';
+        recognition.continuous = false;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          isListening = true;
+          btn.classList.add('listening');
+          btn.textContent = '⏹️';
+          aiSetStatus('Mendengarkan…', true);
+        };
+        recognition.onresult = event => {
+          let transcript = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          if (input) input.value = transcript;
+        };
+        recognition.onerror = event => {
+          console.warn('Speech recognition:', event.error);
+          aiSetStatus('Siap membantu');
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            aiAddMessage('assistant', 'Akses mikrofon belum diizinkan. Silakan izinkan microphone untuk situs aplikasi ini.');
+          }
+        };
+        recognition.onend = () => {
+          isListening = false;
+          btn.classList.remove('listening');
+          btn.textContent = '🎙️';
+          aiSetStatus('Siap membantu');
+          if (input && input.value.trim()) aiAsk(input.value.trim(), true);
+        };
+
+        btn.addEventListener('click', () => {
+          if (isListening) recognition.stop();
+          else {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            recognition.start();
+          }
+        });
+      }
+
+      // Start after the existing app initialization has loaded its data.
+      const oldWindowOnload = window.onload;
+      window.addEventListener('load', () => {
+        setTimeout(initVoiceAssistant, 300);
+      });
+
       function mockResponse(action) {
           return new Promise(resolve => {
               setTimeout(() => {
@@ -886,6 +1230,7 @@
                   ]);
                   else if(action === 'getTodayRecords') resolve([]);
                   else if(action === 'submitData' || action === 'updateProductParams' || action === 'addMasterData') resolve({status:'success'});
+                   else if(action === 'aiChat') resolve({status:'error', message:'AI server action belum dikonfigurasi'});
                   else if(action.includes('getReportData')) resolve({summary: [{segment:'Retail', sku:'121-701-0007', desc:'DRV MRTR D-1 PRKT BATA RINGAN-40KG-RTL', qty:1000, maxAge:5, status:'Aman'}]});
                   else if(action.includes('getFifoRecommendation')) resolve({bin:'FG-A', lot:'123', qty:1000});
               }, 200);
