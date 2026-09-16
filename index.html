@@ -258,6 +258,21 @@
       </div>
     </div>
 
+    <!-- Dedicated confirmation for Matrix Qty revision -->
+    <div id="matrixQtyConfirm" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:20000;align-items:center;justify-content:center;padding:20px;">
+      <div style="width:min(430px,94vw);background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(15,23,42,.28);overflow:hidden;">
+        <div style="padding:18px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+          <div style="font-size:16px;font-weight:800;color:#0f172a;">Konfirmasi Revisi Qty</div>
+          <div style="font-size:11px;color:#64748b;margin-top:3px;">Perubahan akan langsung disimpan ke database.</div>
+        </div>
+        <div id="matrixQtyConfirmMsg" style="padding:20px;color:#334155;font-size:12px;line-height:1.6;"></div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:0 20px 18px;">
+          <button type="button" id="matrixQtyCancel" class="btn-danger" style="padding:10px 18px;">Batal</button>
+          <button type="button" id="matrixQtySave" class="btn-primary" style="padding:10px 18px;width:auto;">Simpan</button>
+        </div>
+      </div>
+    </div>
+
     <div id="app-view" class="app-container">
       <header>
         <div class="brand-group">
@@ -402,8 +417,8 @@
           </div>
 
           <div class="matrix-help">
-            <b>✎ Cara edit Qty:</b> klik angka Qty → ubah nilai → tekan <b>Enter</b>.
-            Setelah dikonfirmasi <b>Simpan</b>, perubahan langsung masuk ke database. <b>Esc</b> = batal.
+            <b>✎ Cara edit Qty:</b> klik angka Qty → ubah nilai → tekan <b>Enter</b> atau klik di luar.
+            Popup konfirmasi akan muncul. <b>Simpan</b> = langsung masuk database, <b>Batal</b> = kembali ke nilai lama, <b>Esc</b> = batal.
           </div>
 
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 8px;font-size:11px;color:var(--text-muted);">
@@ -928,13 +943,20 @@
         if (!row) return;
 
         const oldValue = Number((row.values && row.values[date]) ?? row[date] ?? 0) || 0;
+
         cell.classList.add('editing');
 
         const input = document.createElement('input');
         input.type = 'number';
         input.step = '0.01';
         input.value = oldValue;
-        input.setAttribute('aria-label', `Qty ${row.sku || ''} ${date}`);
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
+        input.style.textAlign = 'right';
+        input.style.fontWeight = '800';
+        input.style.border = '1px solid #2563eb';
+        input.style.borderRadius = '6px';
+        input.style.padding = '5px 7px';
 
         cell.innerHTML = '';
         cell.appendChild(input);
@@ -942,26 +964,26 @@
         input.select();
 
         let finished = false;
-        let popupOpen = false;
+        let confirmationOpen = false;
+        let blurTimer = null;
 
-        const finishCancel = () => {
+        const closeWithoutSave = () => {
           if (finished) return;
           finished = true;
-          popupOpen = false;
+          if (blurTimer) clearTimeout(blurTimer);
           renderStockTransactionMatrix();
           updateMatrixEditCount();
         };
 
-        const saveDirectToBackend = async (newValue) => {
+        const saveToBackend = async (newValue) => {
           if (finished) return;
           finished = true;
-
-          popupOpen = false;
+          confirmationOpen = false;
 
           const change = {
             rowIndex: ri,
             date: date,
-            sku: row.sku || row.material || '',
+            sku: row.sku || row.material || row.materialCode || '',
             desc: row.desc || row.description || row.materialDescription || '',
             segment: row.segment || '',
             transType: row.transType || row.type || row.transactionType || '',
@@ -981,23 +1003,20 @@
             if (res && res.status === 'success') {
               if (!row.values) row.values = {};
               row.values[date] = newValue;
-
-              // Tidak ada lagi tombol simpan kedua.
-              // Perubahan langsung dianggap tersimpan setelah backend sukses.
               delete matrixDirtyChanges[matrixCellKey(ri, date)];
-              updateMatrixEditCount();
+
               renderStockTransactionMatrix();
+              updateMatrixEditCount();
 
               showAlert(
                 'Berhasil',
-                `Qty <b>${escapeHtml(row.sku || '')}</b> pada <b>${escapeHtml(formatMatrixDate(date))}</b> berhasil diubah menjadi <b>${formatMatrixQty(newValue)}</b>.`
+                `Qty <b>${escapeHtml(row.sku || '')}</b> pada <b>${escapeHtml(formatMatrixDate(date))}</b> berhasil disimpan: <b>${formatMatrixQty(newValue)}</b>.`
               );
             } else {
               renderStockTransactionMatrix();
               updateMatrixEditCount();
               showAlert('Gagal', res?.message || 'Perubahan Qty belum tersimpan.');
             }
-
           } catch (err) {
             renderStockTransactionMatrix();
             updateMatrixEditCount();
@@ -1007,63 +1026,75 @@
           }
         };
 
-        const askSave = () => {
+        const openConfirm = () => {
+          if (finished || confirmationOpen) return;
+
           let newValue = Number(input.value);
           if (!Number.isFinite(newValue)) newValue = oldValue;
 
           if (newValue === oldValue) {
-            finishCancel();
+            closeWithoutSave();
             return;
           }
 
-          popupOpen = true;
+          confirmationOpen = true;
 
-          const msg =
-            `<div style="text-align:left;line-height:1.6">` +
-            `<div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px">Konfirmasi Revisi Qty</div>` +
-            `<div><span style="color:#64748b">SKU</span><br><b>${escapeHtml(row.sku || '')}</b></div>` +
-            `<div style="margin-top:6px"><span style="color:#64748b">Transaksi</span><br><b>${escapeHtml(row.transType || row.type || row.transactionType || '')}</b></div>` +
-            `<div style="margin-top:6px"><span style="color:#64748b">Tanggal</span><br><b>${escapeHtml(formatMatrixDate(date))}</b></div>` +
-            `<div style="margin-top:6px"><span style="color:#64748b">Qty</span><br><span style="font-size:16px">${formatMatrixQty(oldValue)} → <b style="color:#2563eb">${formatMatrixQty(newValue)}</b></span></div>` +
-            `<div style="margin-top:12px;color:#475569">Simpan perubahan ini langsung ke database?</div>` +
-            `</div>`;
+          const modal = document.getElementById('matrixQtyConfirm');
+          const msgEl = document.getElementById('matrixQtyConfirmMsg');
+          const btnSave = document.getElementById('matrixQtySave');
+          const btnCancel = document.getElementById('matrixQtyCancel');
 
-          const modal = document.getElementById('custom-confirm');
-          const msgEl = document.getElementById('confirm-msg');
-          const btnOk = document.getElementById('btn-confirm-ok');
-          const btnCancel = document.getElementById('btn-confirm-cancel');
+          const direction = newValue > oldValue
+            ? 'bertambah'
+            : 'berkurang';
 
-          msgEl.innerHTML = msg;
-          btnOk.textContent = 'Simpan';
-          btnCancel.textContent = 'Batal';
+          msgEl.innerHTML =
+            `<div style="display:grid;grid-template-columns:105px 1fr;gap:6px 10px;">` +
+            `<span style="color:#64748b;">SKU</span><b>${escapeHtml(row.sku || '')}</b>` +
+            `<span style="color:#64748b;">Material</span><b>${escapeHtml(row.desc || row.description || row.materialDescription || '')}</b>` +
+            `<span style="color:#64748b;">Transaksi</span><b>${escapeHtml(row.transType || row.type || row.transactionType || '')}</b>` +
+            `<span style="color:#64748b;">Tanggal</span><b>${escapeHtml(formatMatrixDate(date))}</b>` +
+            `<span style="color:#64748b;">Qty</span><b style="font-size:16px;">${formatMatrixQty(oldValue)} &rarr; <span style="color:#2563eb;">${formatMatrixQty(newValue)}</span></b>` +
+            `</div>` +
+            `<div style="margin-top:14px;padding:10px;border-radius:9px;background:#eff6ff;color:#1e40af;">Qty akan ${direction}. Apakah perubahan ini akan disimpan?</div>`;
+
           modal.style.display = 'flex';
 
-          btnOk.onclick = async () => {
+          btnSave.onclick = async () => {
             modal.style.display = 'none';
-            await saveDirectToBackend(newValue);
+            await saveToBackend(newValue);
           };
 
           btnCancel.onclick = () => {
             modal.style.display = 'none';
-            finishCancel();
+            confirmationOpen = false;
+            closeWithoutSave();
           };
         };
 
-        input.addEventListener('keydown', e => {
+        input.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
             e.preventDefault();
-            askSave();
+            openConfirm();
           } else if (e.key === 'Escape') {
             e.preventDefault();
-            finishCancel();
+            closeWithoutSave();
           }
         });
 
-        // Klik/blur tidak otomatis menyimpan. User harus memilih Simpan/Batal di popup.
-        input.addEventListener('blur', () => {});
+        // Sekarang klik/blur juga memunculkan popup.
+        input.addEventListener('blur', () => {
+          if (finished || confirmationOpen) return;
+
+          blurTimer = setTimeout(() => {
+            // Beri browser waktu berpindah fokus; jika user pindah ke tombol/modal,
+            // popup tetap ditampilkan.
+            openConfirm();
+          }, 120);
+        });
       }
 
-            function escapeHtml(value) {
+      function escapeHtml(value) {
         return String(value ?? '')
           .replace(/&/g,'&amp;')
           .replace(/</g,'&lt;')
