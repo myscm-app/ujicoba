@@ -396,14 +396,14 @@
             <button type="button" class="btn-primary" id="btnLoadMatrix" onclick="loadStockTransactionMatrix()" style="width:auto; padding:11px 18px;">
               <i class="fas fa-sync-alt"></i> Tampilkan
             </button>
-            <button type="button" class="btn-add" id="btnSaveMatrix" onclick="saveStockTransactionMatrix()" style="width:auto; padding:11px 18px; background:#0f766e;">
-              <i class="fas fa-save"></i> Simpan Perubahan
-            </button>
+            <div id="matrixAutoSaveBadge" style="display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:8px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:11px;font-weight:700;">
+              <i class="fas fa-bolt"></i> Revisi otomatis saat dikonfirmasi
+            </div>
           </div>
 
           <div class="matrix-help">
-            <b>✎ Cara edit Qty:</b> klik angka Qty pada tanggal yang diinginkan → ubah nilai → tekan <b>Enter</b> atau klik di luar.
-            Perubahan ditandai sebelum disimpan. <b>Enter</b> = simpan nilai, <b>Esc</b> = batal.
+            <b>✎ Cara edit Qty:</b> klik angka Qty → ubah nilai → tekan <b>Enter</b>.
+            Setelah dikonfirmasi <b>Simpan</b>, perubahan langsung masuk ke database. <b>Esc</b> = batal.
           </div>
 
           <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 8px;font-size:11px;color:var(--text-muted);">
@@ -919,7 +919,7 @@
       }
 
 
-      function editMatrixQty(cell) {
+      async function editMatrixQty(cell) {
         if (!cell || cell.classList.contains('editing')) return;
 
         const ri = Number(cell.dataset.row);
@@ -942,64 +942,91 @@
         input.select();
 
         let finished = false;
+        let popupOpen = false;
 
-        const restoreConfirmButtonLabels = () => {
-          const ok = document.getElementById('btn-confirm-ok');
-          const cancel = document.getElementById('btn-confirm-cancel');
-          if (ok) ok.textContent = 'Ya, Lanjutkan';
-          if (cancel) cancel.textContent = 'Batal';
-        };
-
-        const cancelEdit = () => {
+        const finishCancel = () => {
           if (finished) return;
           finished = true;
+          popupOpen = false;
           renderStockTransactionMatrix();
           updateMatrixEditCount();
-          restoreConfirmButtonLabels();
         };
 
-        const commitEdit = (newValue) => {
+        const saveDirectToBackend = async (newValue) => {
           if (finished) return;
           finished = true;
 
-          if (!Number.isFinite(newValue)) newValue = oldValue;
+          popupOpen = false;
 
-          if (newValue !== oldValue) {
-            if (!row.values) row.values = {};
-            row.values[date] = newValue;
+          const change = {
+            rowIndex: ri,
+            date: date,
+            sku: row.sku || row.material || '',
+            desc: row.desc || row.description || row.materialDescription || '',
+            segment: row.segment || '',
+            transType: row.transType || row.type || row.transactionType || '',
+            oldQty: oldValue,
+            qty: newValue
+          };
 
-            matrixDirtyChanges[matrixCellKey(ri, date)] = {
-              rowIndex: ri,
-              date: date,
-              sku: row.sku || row.material || '',
-              transType: row.transType || row.type || row.transactionType || '',
-              oldQty: oldValue,
-              qty: newValue
-            };
+          showLoading(true);
+
+          try {
+            const res = await stockMatrixApiCall('updateTransactionMatrix', {
+              changes: [change],
+              month: document.getElementById('matrixMonth')?.value,
+              year: document.getElementById('matrixYear')?.value
+            });
+
+            if (res && res.status === 'success') {
+              if (!row.values) row.values = {};
+              row.values[date] = newValue;
+
+              // Tidak ada lagi tombol simpan kedua.
+              // Perubahan langsung dianggap tersimpan setelah backend sukses.
+              delete matrixDirtyChanges[matrixCellKey(ri, date)];
+              updateMatrixEditCount();
+              renderStockTransactionMatrix();
+
+              showAlert(
+                'Berhasil',
+                `Qty <b>${escapeHtml(row.sku || '')}</b> pada <b>${escapeHtml(formatMatrixDate(date))}</b> berhasil diubah menjadi <b>${formatMatrixQty(newValue)}</b>.`
+              );
+            } else {
+              renderStockTransactionMatrix();
+              updateMatrixEditCount();
+              showAlert('Gagal', res?.message || 'Perubahan Qty belum tersimpan.');
+            }
+
+          } catch (err) {
+            renderStockTransactionMatrix();
+            updateMatrixEditCount();
+            showAlert('Gagal', err?.message || 'Gagal menyimpan perubahan Qty.');
+          } finally {
+            showLoading(false);
           }
-
-          renderStockTransactionMatrix();
-          updateMatrixEditCount();
-          restoreConfirmButtonLabels();
         };
 
         const askSave = () => {
           let newValue = Number(input.value);
           if (!Number.isFinite(newValue)) newValue = oldValue;
 
-          // Tidak ada perubahan -> langsung keluar tanpa popup.
           if (newValue === oldValue) {
-            cancelEdit();
+            finishCancel();
             return;
           }
 
-          const direction = newValue > oldValue ? 'menaikkan' : 'menurunkan';
+          popupOpen = true;
+
           const msg =
-            `<b>Konfirmasi Revisi Qty</b><br><br>` +
-            `${escapeHtml(row.sku || '')}<br>` +
-            `${escapeHtml(row.transType || row.type || row.transactionType || '')}<br>` +
-            `${formatMatrixQty(oldValue)} → <b>${formatMatrixQty(newValue)}</b>` +
-            `<br><br>Apakah Qty akan disimpan?`;
+            `<div style="text-align:left;line-height:1.6">` +
+            `<div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:10px">Konfirmasi Revisi Qty</div>` +
+            `<div><span style="color:#64748b">SKU</span><br><b>${escapeHtml(row.sku || '')}</b></div>` +
+            `<div style="margin-top:6px"><span style="color:#64748b">Transaksi</span><br><b>${escapeHtml(row.transType || row.type || row.transactionType || '')}</b></div>` +
+            `<div style="margin-top:6px"><span style="color:#64748b">Tanggal</span><br><b>${escapeHtml(formatMatrixDate(date))}</b></div>` +
+            `<div style="margin-top:6px"><span style="color:#64748b">Qty</span><br><span style="font-size:16px">${formatMatrixQty(oldValue)} → <b style="color:#2563eb">${formatMatrixQty(newValue)}</b></span></div>` +
+            `<div style="margin-top:12px;color:#475569">Simpan perubahan ini langsung ke database?</div>` +
+            `</div>`;
 
           const modal = document.getElementById('custom-confirm');
           const msgEl = document.getElementById('confirm-msg');
@@ -1011,14 +1038,14 @@
           btnCancel.textContent = 'Batal';
           modal.style.display = 'flex';
 
-          btnOk.onclick = () => {
+          btnOk.onclick = async () => {
             modal.style.display = 'none';
-            commitEdit(newValue);
+            await saveDirectToBackend(newValue);
           };
 
           btnCancel.onclick = () => {
             modal.style.display = 'none';
-            cancelEdit();
+            finishCancel();
           };
         };
 
@@ -1028,64 +1055,15 @@
             askSave();
           } else if (e.key === 'Escape') {
             e.preventDefault();
-            cancelEdit();
+            finishCancel();
           }
         });
 
-        // Jangan auto-save saat blur. Blur dapat terjadi ketika popup dibuka.
-        input.addEventListener('blur', () => {
-          // Sengaja kosong: keputusan Simpan/Batal dilakukan melalui popup.
-        });
+        // Klik/blur tidak otomatis menyimpan. User harus memilih Simpan/Batal di popup.
+        input.addEventListener('blur', () => {});
       }
 
-      function updateMatrixEditCount() {
-        const el = document.getElementById('matrixEditCount');
-        if (el) el.textContent = `${Object.keys(matrixDirtyChanges).length} revisi`;
-      }
-
-      async function saveStockTransactionMatrix() {
-        const changes = Object.values(matrixDirtyChanges);
-        if (!changes.length) {
-          showAlert('Informasi', 'Belum ada Qty yang diubah.');
-          return;
-        }
-
-        showConfirm(
-          `Simpan <b>${changes.length}</b> perubahan Qty ke database?`,
-          async () => {
-            showLoading(true);
-            try {
-              const enrichedChanges = changes.map(ch => {
-                const row = stockTransactionMatrixData.rows[ch.rowIndex] || {};
-                return Object.assign({}, ch, {
-                  desc: row.desc || row.description || row.materialDescription || '',
-                  segment: row.segment || ''
-                });
-              });
-              const res = await stockMatrixApiCall('updateTransactionMatrix', {
-                changes: enrichedChanges,
-                month: document.getElementById('matrixMonth')?.value,
-                year: document.getElementById('matrixYear')?.value
-              });
-
-              if (res && res.status === 'success') {
-                matrixDirtyChanges = {};
-                updateMatrixEditCount();
-                showAlert('Berhasil', 'Perubahan Qty berhasil disimpan.');
-                await loadStockTransactionMatrix();
-              } else {
-                showAlert('Gagal', res?.message || 'Backend belum mendukung updateTransactionMatrix.');
-              }
-            } catch (e) {
-              showAlert('Gagal', e.message || 'Gagal menyimpan perubahan.');
-            } finally {
-              showLoading(false);
-            }
-          }
-        );
-      }
-
-      function escapeHtml(value) {
+            function escapeHtml(value) {
         return String(value ?? '')
           .replace(/&/g,'&amp;')
           .replace(/</g,'&lt;')
