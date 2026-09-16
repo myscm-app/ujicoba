@@ -542,6 +542,199 @@
 
 
       
+
+      /* ==========================================================
+         GLOBAL WMS DIALOG SYSTEM
+         One consistent popup language for the whole application.
+         ========================================================== */
+      :root {
+        --dialog-blue:#2563eb;
+        --dialog-blue-hover:#1d4ed8;
+        --dialog-red:#ef4444;
+        --dialog-red-hover:#dc2626;
+        --dialog-text:#0f172a;
+        --dialog-muted:#64748b;
+        --dialog-border:#dbe4ef;
+        --dialog-surface:#ffffff;
+        --dialog-soft:#f8fafc;
+      }
+
+      .wms-dialog-shell,
+      #custom-confirm.wms-confirm-overlay,
+      #matrixQtyConfirm.matrix-qty-confirm-overlay {
+        position:fixed !important;
+        inset:0 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:20px !important;
+        background:rgba(15,23,42,.58) !important;
+        z-index:2147483001 !important;
+        opacity:0;
+        visibility:hidden;
+        pointer-events:none;
+        transition:opacity .16s ease, visibility .16s ease;
+      }
+
+      .wms-dialog-shell.is-open,
+      #custom-confirm.wms-confirm-overlay.is-open,
+      #matrixQtyConfirm.matrix-qty-confirm-overlay.is-open {
+        opacity:1 !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+      }
+
+      .wms-dialog-card,
+      .wms-confirm-box,
+      #matrixQtyConfirm .matrix-confirm-box {
+        width:min(430px,94vw);
+        max-height:min(84vh,620px);
+        background:var(--dialog-surface);
+        color:var(--dialog-text);
+        border:1px solid var(--dialog-border);
+        border-radius:14px;
+        box-shadow:0 20px 55px rgba(15,23,42,.26);
+        overflow:hidden;
+        transform:translateY(8px) scale(.985);
+        transition:transform .16s ease;
+      }
+
+      .wms-dialog-shell.is-open .wms-dialog-card,
+      #custom-confirm.is-open .wms-confirm-box,
+      #matrixQtyConfirm.is-open .matrix-confirm-box {
+        transform:translateY(0) scale(1);
+      }
+
+      .wms-dialog-head,
+      .wms-confirm-head,
+      #matrixQtyConfirm .matrix-confirm-head {
+        min-height:56px;
+        padding:14px 18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        background:var(--dialog-soft);
+        border-bottom:1px solid #e7edf4;
+      }
+
+      .wms-dialog-title,
+      .wms-confirm-title {
+        font-size:14px;
+        font-weight:800;
+        color:var(--dialog-text);
+        line-height:1.25;
+      }
+
+      .wms-dialog-subtitle {
+        margin-top:3px;
+        font-size:10px;
+        color:var(--dialog-muted);
+        line-height:1.4;
+      }
+
+      .wms-dialog-close,
+      .wms-confirm-close {
+        width:28px;
+        height:28px;
+        border:0;
+        background:transparent;
+        color:#64748b;
+        border-radius:8px;
+        font-size:20px;
+        line-height:1;
+        cursor:pointer;
+      }
+
+      .wms-dialog-close:hover,
+      .wms-confirm-close:hover {
+        background:#eef2f7;
+        color:#0f172a;
+      }
+
+      .wms-dialog-body,
+      .wms-confirm-body,
+      #matrixQtyConfirm .matrix-confirm-body {
+        padding:18px;
+        font-size:12px;
+        line-height:1.6;
+        color:#334155;
+      }
+
+      .wms-dialog-actions,
+      .wms-confirm-actions,
+      #matrixQtyConfirm .matrix-confirm-actions {
+        display:flex;
+        align-items:center;
+        justify-content:flex-end;
+        gap:8px;
+        padding:0 18px 16px;
+      }
+
+      .wms-dialog-btn,
+      .wms-confirm-btn {
+        min-width:80px;
+        height:38px;
+        padding:0 16px;
+        border-radius:8px;
+        font-size:12px;
+        font-weight:800;
+        border:1px solid transparent;
+        cursor:pointer;
+      }
+
+      .wms-dialog-cancel,
+      .wms-confirm-cancel,
+      #matrixQtyConfirm #matrixQtyCancel {
+        color:#fff !important;
+        background:var(--dialog-red) !important;
+        border-color:var(--dialog-red) !important;
+      }
+
+      .wms-dialog-cancel:hover,
+      .wms-confirm-cancel:hover,
+      #matrixQtyConfirm #matrixQtyCancel:hover {
+        background:var(--dialog-red-hover) !important;
+        border-color:var(--dialog-red-hover) !important;
+      }
+
+      .wms-dialog-ok,
+      .wms-confirm-ok,
+      #matrixQtyConfirm #matrixQtySave {
+        color:#fff !important;
+        background:var(--dialog-blue) !important;
+        border-color:var(--dialog-blue) !important;
+        box-shadow:0 5px 14px rgba(37,99,235,.18);
+      }
+
+      .wms-dialog-ok:hover,
+      .wms-confirm-ok:hover,
+      #matrixQtyConfirm #matrixQtySave:hover {
+        background:var(--dialog-blue-hover) !important;
+        border-color:var(--dialog-blue-hover) !important;
+      }
+
+      /* Matrix detail rows follow the same restrained visual hierarchy. */
+      #matrixQtyConfirm .matrix-confirm-head > div:first-child {
+        color:var(--dialog-text) !important;
+        font-size:16px !important;
+      }
+      #matrixQtyConfirm .matrix-confirm-head > div:nth-child(2),
+      #matrixQtyConfirm .matrix-confirm-head > div small {
+        color:var(--dialog-muted) !important;
+      }
+
+      @media (max-width:600px){
+        .wms-dialog-card,
+        .wms-confirm-box,
+        #matrixQtyConfirm .matrix-confirm-box {
+          width:min(410px,calc(100vw - 28px));
+        }
+      }
+      .wms-dialog-content b { color:#1e3a5f; }
+      .wms-dialog-content br + br { line-height:.55; }
+
+
       /* Restored custom WMS confirmation dialog */
       #custom-confirm.wms-confirm-overlay {
         position:fixed;
@@ -700,8 +893,8 @@
         </div>
         <div id="matrixQtyConfirmMsg" class="matrix-confirm-body"></div>
         <div class="matrix-confirm-actions">
-          <button type="button" id="matrixQtyCancel" class="btn-danger" style="padding:10px 18px;">Batal</button>
-          <button type="button" id="matrixQtySave" class="btn-primary" style="padding:10px 18px;width:auto;min-width:112px;"><i class="fas fa-check"></i> Simpan</button>
+          <button type="button" id="matrixQtyCancel" class="btn-danger" style="padding:10px 18px;min-width:80px;">Batal</button>
+          <button type="button" id="matrixQtySave" class="btn-primary" style="padding:10px 18px;width:auto;min-width:92px;"><i class="fas fa-check"></i> Simpan</button>
         </div>
       </div>
     </div>
@@ -1268,7 +1461,7 @@
           }
         };
 
-        msg.innerHTML = String(message || '');
+        msg.innerHTML = `<div class="wms-dialog-content">${String(message || '')}</div>`;
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
 
