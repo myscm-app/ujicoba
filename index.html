@@ -473,8 +473,6 @@
         justify-content:center;
         padding:20px;
       }
-      .matrix-qty-confirm-overlay[hidden] { display:none !important; }
-      .matrix-qty-confirm-overlay:not([hidden]) { display:flex !important; }
 
     </style>
   </head>
@@ -513,7 +511,7 @@
     </div>
 
     <!-- Dedicated confirmation for Matrix Qty revision -->
-    <div id="matrixQtyConfirm" hidden class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    <div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:none;">
       <div class="matrix-confirm-box">
         <div class="matrix-confirm-head">
           <div style="font-size:16px;font-weight:800;color:#0f172a;"><i class="fas fa-shield-alt" style="color:#2563eb;margin-right:7px;"></i>Konfirmasi Revisi Qty</div>
@@ -1449,29 +1447,33 @@
           cell.appendChild(input);
           this.input = input;
 
-          // Bind langsung ke input editor: ini menghindari konflik bubbling/capture dari handler lain.
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              window.requestAnimationFrame(() => this.confirm());
-              return;
-            }
-            if (e.key === 'Escape') {
-              e.preventDefault();
-              e.stopImmediatePropagation();
-              window.requestAnimationFrame(() => this.cancel());
-            }
-          }, true);
+          // HANDLER LANGSUNG PADA INPUT: tidak bergantung pada event delegation/global handler.
+          // Dipasang via property handler + listener agar Enter tetap tertangkap pada browser yang
+          // memiliki handler keydown lain di document/table.
+          const handleEnter = (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            // Jangan tunggu blur; buka popup sekarang juga.
+            this.confirm();
+          };
+          input.onkeydown = handleEnter;
+          input.onkeyup = handleEnter;
 
-          // Beberapa browser/keyboard lebih konsisten memicu keyup untuk Enter.
-          input.addEventListener('keyup', (e) => {
+          input.onkeydown = (e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
+              e.stopPropagation();
               e.stopImmediatePropagation();
-              if (!this.isOpen()) this.confirm();
+              this.confirm();
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopPropagation();
+              e.stopImmediatePropagation();
+              this.cancel();
             }
-          }, true);
+          };
 
           input.addEventListener('blur', () => {
             window.setTimeout(() => {
@@ -1530,9 +1532,14 @@
             return;
           }
 
-          // Gunakan class + hidden sekaligus untuk kompatibilitas browser.
+          // Tampilkan popup secara eksplisit. Tidak bergantung pada atribut [hidden]
+          // agar tidak kalah oleh CSS/handler global dari aplikasi WMS.
           modal.hidden = false;
           modal.classList.add('is-open');
+          modal.style.display = 'flex';
+          modal.style.opacity = '1';
+          modal.style.visibility = 'visible';
+          modal.style.pointerEvents = 'auto';
           modal.setAttribute('aria-hidden', 'false');
 
           // Fokus tombol Simpan agar popup langsung siap digunakan.
@@ -1611,7 +1618,11 @@
           const modal = this.modal;
           if (modal) {
             modal.classList.remove('is-open');
-            modal.hidden = true;
+            modal.hidden = false;
+            modal.style.display = 'none';
+            modal.style.opacity = '0';
+            modal.style.visibility = 'hidden';
+            modal.style.pointerEvents = 'none';
             modal.setAttribute('aria-hidden', 'true');
           }
 
@@ -1665,6 +1676,38 @@
           event.preventDefault();
           event.stopPropagation();
           matrixQtyEditor.open(cell);
+        }
+      }, true);
+
+      // Keyboard guard level WINDOW: dipanggil paling awal pada fase capture,
+      // sebelum handler document/table lain. Ini mencegah Enter tertahan oleh
+      // listener lain di aplikasi.
+      window.addEventListener('keydown', function(event) {
+        const input = event.target && event.target.closest
+          ? event.target.closest('#stockTransactionMatrix td.matrix-qty input')
+          : null;
+        if (!input || matrixQtyEditor.input !== input) return;
+
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          matrixQtyEditor.confirm();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          matrixQtyEditor.cancel();
+        }
+      }, true);
+
+      window.addEventListener('keyup', function(event) {
+        const input = event.target && event.target.closest
+          ? event.target.closest('#stockTransactionMatrix td.matrix-qty input')
+          : null;
+        if (!input || matrixQtyEditor.input !== input) return;
+        if (event.key === 'Enter' && !matrixQtyEditor.isOpen()) {
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          matrixQtyEditor.confirm();
         }
       }, true);
 
