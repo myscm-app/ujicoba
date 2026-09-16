@@ -153,6 +153,90 @@
         .ai-input-row #aiVoiceBtn { grid-column:1/-1; }
       }
 
+      /* ================================
+         STOCK TRANSACTION MATRIX
+         ================================ */
+      .stock-matrix-toolbar {
+        display:flex; gap:10px; align-items:end; flex-wrap:wrap;
+        margin-bottom:16px;
+      }
+      .stock-matrix-toolbar .field { min-width:150px; }
+      .stock-matrix-toolbar label { display:block; font-size:11px; font-weight:700; color:var(--text-muted); margin-bottom:6px; }
+      .matrix-card { overflow:hidden; }
+      .matrix-scroll {
+        overflow:auto; border:1px solid var(--border); border-radius:10px;
+        max-height:68vh; background:#fff;
+      }
+      #stockTransactionMatrix {
+        width:max-content; min-width:100%;
+        border-collapse:separate; border-spacing:0;
+        font-size:12px;
+      }
+      #stockTransactionMatrix th,
+      #stockTransactionMatrix td {
+        padding:8px 10px; border-right:1px solid var(--border);
+        border-bottom:1px solid var(--border); white-space:nowrap;
+        height:40px;
+      }
+      #stockTransactionMatrix thead th {
+        position:sticky; top:0; z-index:5;
+        background:#0f172a; color:#fff; text-align:center;
+        font-size:11px;
+      }
+      #stockTransactionMatrix .sticky-sku {
+        position:sticky; left:0; z-index:7; background:#fff;
+        min-width:145px; max-width:170px; font-weight:700;
+      }
+      #stockTransactionMatrix .sticky-desc {
+        position:sticky; left:145px; z-index:7; background:#fff;
+        min-width:330px; max-width:430px; font-weight:600;
+      }
+      #stockTransactionMatrix .sticky-type {
+        position:sticky; left:475px; z-index:7; background:#fff;
+        min-width:190px; max-width:220px;
+      }
+      #stockTransactionMatrix thead .sticky-sku,
+      #stockTransactionMatrix thead .sticky-desc,
+      #stockTransactionMatrix thead .sticky-type {
+        z-index:10; background:#0f172a; color:#fff;
+      }
+      #stockTransactionMatrix tbody tr:hover td { background:#f8fafc; }
+      #stockTransactionMatrix tbody tr:hover .sticky-sku,
+      #stockTransactionMatrix tbody tr:hover .sticky-desc,
+      #stockTransactionMatrix tbody tr:hover .sticky-type { background:#f8fafc; }
+      .matrix-sku-cell { vertical-align:top; }
+      .matrix-desc-cell { vertical-align:top; white-space:normal !important; }
+      .matrix-stock-row td { font-weight:800 !important; background:#f8fafc; }
+      .matrix-stock-row .matrix-qty { background:#f1f5f9; }
+      .matrix-qty {
+        min-width:82px; text-align:right; cursor:pointer;
+        font-weight:600; transition:.15s; user-select:none;
+      }
+      .matrix-qty:hover { background:#eff6ff !important; color:var(--primary); }
+      .matrix-qty.editing { padding:3px; background:#eff6ff !important; }
+      .matrix-qty input {
+        width:76px; padding:7px 6px; border:2px solid var(--primary);
+        border-radius:6px; text-align:right; font-size:12px; font-weight:700;
+        outline:none; background:#fff;
+      }
+      .matrix-empty { text-align:center; color:#94a3b8; padding:30px !important; }
+      .matrix-total td { background:#f1f5f9 !important; font-weight:800; }
+      .matrix-total .sticky-sku, .matrix-total .sticky-type { background:#f1f5f9 !important; }
+      .matrix-positive { color:#0f766e; }
+      .matrix-negative { color:#dc2626; }
+      .matrix-help {
+        background:#eff6ff; border:1px solid #bfdbfe; color:#1e40af;
+        border-radius:10px; padding:10px 12px; font-size:11px; margin-bottom:14px;
+      }
+      .matrix-badge {
+        display:inline-block; padding:3px 7px; border-radius:999px;
+        background:#e2e8f0; color:#334155; font-size:10px; font-weight:700;
+      }
+      @media(max-width:800px){
+        #stockTransactionMatrix .sticky-sku { min-width:170px; max-width:210px; }
+        #stockTransactionMatrix .sticky-type { left:145px; min-width:160px; }
+      }
+
     </style>
   </head>
   <body>
@@ -183,6 +267,7 @@
         </div>
         <nav class="nav-tabs">
           <button class="nav-btn active" id="nav-entry" onclick="switchPage('entry')">Transaksi</button>
+          <button class="nav-btn" id="nav-stocktrx" onclick="switchPage('stocktrx')">Stok Transaksi</button>
           <button class="nav-btn" id="nav-master" onclick="switchPage('master')">Master Data</button>
         </nav>
       </header>
@@ -286,6 +371,57 @@
         <div class="card" style="border-top: 4px solid var(--success);"><h3>Riwayat Hari Ini</h3><div class="table-wrapper"><table id="todayTable"><thead><tr><th>Jam</th><th>Tipe</th><th>SKU</th><th>Desc</th><th>Qty</th></tr></thead><tbody></tbody></table></div></div>
       </section>
 
+
+      <section id="page-stocktrx" class="page-section">
+        <div class="card matrix-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
+            <div>
+              <h3 style="margin:0 0 4px 0;">Stok Transaksi</h3>
+              <div style="font-size:11px; color:var(--text-muted);">
+                Tampilan matriks transaksi harian. SKU, Material, dan transaksi tetap di kiri, tanggal bergerak ke samping. Klik langsung angka Qty untuk revisi. Retail dan Project dikelompokkan per SKU.
+              </div>
+            </div>
+            <span id="matrixStatus" class="matrix-badge">Belum dimuat</span>
+          </div>
+
+          <div class="stock-matrix-toolbar">
+            <div class="field">
+              <label>Bulan</label>
+              <select id="matrixMonth"></select>
+            </div>
+            <div class="field">
+              <label>Tahun</label>
+              <input type="number" id="matrixYear" min="2020" max="2100">
+            </div>
+            <button type="button" class="btn-primary" id="btnLoadMatrix" onclick="loadStockTransactionMatrix()" style="width:auto; padding:11px 18px;">
+              <i class="fas fa-sync-alt"></i> Tampilkan
+            </button>
+            <button type="button" class="btn-add" id="btnSaveMatrix" onclick="saveStockTransactionMatrix()" style="width:auto; padding:11px 18px; background:#0f766e;">
+              <i class="fas fa-save"></i> Simpan Perubahan
+            </button>
+          </div>
+
+          <div class="matrix-help">
+            <b>✎ Cara edit Qty:</b> klik angka Qty pada tanggal yang diinginkan → ubah nilai → tekan <b>Enter</b> atau klik di luar.
+            Perubahan ditandai sebelum disimpan. <b>Enter</b> = simpan nilai, <b>Esc</b> = batal.
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 8px;font-size:11px;color:var(--text-muted);">
+            <span><b>Matrix Pergerakan Stok</b> — 1 SKU = 1 blok transaksi</span>
+            <span id="matrixEditCount">0 revisi</span>
+          </div>
+
+          <div class="matrix-scroll">
+            <table id="stockTransactionMatrix">
+              <thead id="stockTransactionMatrixHead"></thead>
+              <tbody id="stockTransactionMatrixBody">
+                <tr><td colspan="4" class="matrix-empty">Pilih bulan lalu klik Tampilkan.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section id="page-master" class="page-section">
         <div class="card">
           <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">MASTER DATA BARANG</div>
@@ -354,6 +490,8 @@
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
+      let stockTransactionMatrixData = { dates: [], rows: [] };
+      let matrixDirtyChanges = {};
       
       function showAlert(title, message) {
         document.getElementById('notif-title').innerText = title;
@@ -418,6 +556,7 @@
         showLoading(false);
         switchPage('entry');
         handleTransTypeChange();
+        initStockTransactionMatrix();
 
         // Ambil stok di background. Tidak menahan tampilan aplikasi.
         const today = new Date().toISOString().split('T')[0];
@@ -443,6 +582,7 @@
         }
         
         if(p === 'entry') loadTodayRecords();
+        if(p === 'stocktrx') initStockTransactionMatrix();
         if(p === 'master') renderMasterPreview();
       }
 
@@ -485,6 +625,371 @@
           }
       }
       
+
+      function initStockTransactionMatrix() {
+        const monthEl = document.getElementById('matrixMonth');
+        const yearEl = document.getElementById('matrixYear');
+        if (!monthEl || !yearEl) return;
+
+        if (!monthEl.options.length) {
+          const names = [
+            'Januari','Februari','Maret','April','Mei','Juni',
+            'Juli','Agustus','September','Oktober','November','Desember'
+          ];
+          monthEl.innerHTML = names.map((n,i) => `<option value="${i}">${n}</option>`).join('');
+        }
+
+        const d = new Date();
+        monthEl.value = String(d.getMonth());
+        yearEl.value = d.getFullYear();
+
+        // Selalu tampilkan struktur matrix saat menu dibuka, lalu otomatis
+        // mengambil data bulan berjalan. Tombol Tampilkan tetap tersedia untuk
+        // mengganti bulan/tahun dan refresh data.
+        renderMatrixSkeleton();
+        if (!stockTransactionMatrixData.rows.length || stockTransactionMatrixData.loadedMonth !== `${yearEl.value}-${String(Number(monthEl.value)+1).padStart(2,'0')}`) {
+          loadStockTransactionMatrix();
+        }
+      }
+
+      function daysInMonth(year, monthIndex) {
+        return new Date(year, monthIndex + 1, 0).getDate();
+      }
+
+      function formatMatrixQty(value) {
+        const n = Number(value);
+        if (!Number.isFinite(n) || n === 0) return '0';
+        return n.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+      }
+
+      function matrixCellKey(rowIndex, date) {
+        return `${rowIndex}__${date}`;
+      }
+
+      function renderMatrixSkeleton() {
+        const head = document.getElementById('stockTransactionMatrixHead');
+        const body = document.getElementById('stockTransactionMatrixBody');
+        const monthEl = document.getElementById('matrixMonth');
+        const yearEl = document.getElementById('matrixYear');
+        if (!head || !body || !monthEl || !yearEl) return;
+
+        const year = Number(yearEl.value) || new Date().getFullYear();
+        const month = Number(monthEl.value);
+        const days = daysInMonth(year, month);
+        const monthName = new Date(year, month, 1).toLocaleString('en-US', {month:'short'});
+
+        head.innerHTML = '<tr>' +
+          '<th class="sticky-sku">SKU MATERIAL</th>' +
+          '<th class="sticky-desc">MATERIAL DESCRIPTION</th>' +
+          '<th class="sticky-type">TRANSAKSI</th>' +
+          Array.from({length:days}, (_,i) => `<th>${String(i+1).padStart(2,'0')}-${monthName}</th>`).join('') +
+          '<th>TOTAL</th></tr>';
+
+        body.innerHTML = `<tr><td colspan="${days + 4}" class="matrix-empty">
+          <div style="font-size:18px;margin-bottom:6px;">📊</div>
+          <b>Memuat Stock Transaction Matrix...</b><br>
+          <span style="font-size:11px;">${monthName} ${year}</span>
+        </td></tr>`;
+      }
+
+      function renderEmptyStockMatrix(message) {
+        const head = document.getElementById('stockTransactionMatrixHead');
+        const body = document.getElementById('stockTransactionMatrixBody');
+        if (head) {
+          head.innerHTML = '<tr><th class="sticky-sku">SKU MATERIAL</th><th class="sticky-desc">MATERIAL DESCRIPTION</th><th class="sticky-type">TRANSAKSI</th><th>—</th></tr>';
+        }
+        if (body) {
+          const span = (document.querySelectorAll('#stockTransactionMatrixHead th').length || 4);
+          body.innerHTML = `<tr><td colspan="${span}" class="matrix-empty">${message}</td></tr>`;
+        }
+      }
+
+      async function loadStockTransactionMatrix() {
+        const monthEl = document.getElementById('matrixMonth');
+        const yearEl = document.getElementById('matrixYear');
+        const status = document.getElementById('matrixStatus');
+        if (!monthEl || !yearEl) return;
+
+        const month = Number(monthEl.value);
+        const year = Number(yearEl.value);
+        if (!year || year < 2020 || year > 2100) {
+          showAlert('Perhatian', 'Tahun tidak valid.');
+          return;
+        }
+
+        matrixDirtyChanges = {};
+        if (status) status.textContent = 'Memuat...';
+        showLoading(true);
+
+        try {
+          const res = await apiCall(`getTransactionMatrix&month=${year}-${String(month+1).padStart(2,'0')}`);
+          if (res && res.status === 'success' && Array.isArray(res.rows)) {
+            const count = daysInMonth(year, month);
+            const dates = Array.from({length: count}, (_,i) => `${year}-${String(month+1).padStart(2,'0')}-${String(i+1).padStart(2,'0')}`);
+            stockTransactionMatrixData = { dates: dates, rows: res.rows };
+            renderStockTransactionMatrix();
+            if (status) status.textContent = `${res.rows.length} baris`;
+          } else {
+            stockTransactionMatrixData = { dates: [], rows: [] };
+            renderEmptyStockMatrix(
+              res?.message ||
+              'Data matriks belum tersedia. Pastikan backend WMS memiliki action getTransactionMatrix.'
+            );
+            if (status) status.textContent = 'Backend belum tersedia';
+          }
+        } catch (e) {
+          console.error(e);
+          renderEmptyStockMatrix('Gagal memuat data Stok Transaksi.');
+          if (status) status.textContent = 'Error';
+        } finally {
+          showLoading(false);
+        }
+      }
+
+      function renderStockTransactionMatrix() {
+        const head = document.getElementById('stockTransactionMatrixHead');
+        const body = document.getElementById('stockTransactionMatrixBody');
+        if (!head || !body) return;
+
+        const dates = stockTransactionMatrixData.dates || [];
+        const rows = stockTransactionMatrixData.rows || [];
+
+        if (!dates.length || !rows.length) {
+          renderEmptyStockMatrix('Tidak ada data transaksi untuk periode ini.');
+          return;
+        }
+
+        // Struktur tampilan:
+        // SEGMENT (Retail / Project)
+        //   SKU | MATERIAL DESCRIPTION | TRANSAKSI | 01-Sep | 02-Sep | ... | TOTAL
+        // Satu SKU dibuat sebagai satu blok sehingga revisi Qty mudah dilakukan.
+        const getSegment = (row) => {
+          const sku = String(row.sku || row.material || row.materialCode || '').trim();
+          const direct = String(row.segment || row.segm || '').trim();
+          if (direct) return direct;
+          const master = (masterData || []).find(m =>
+            String(m.sku || m.material || m.materialCode || '').trim().toLowerCase() === sku.toLowerCase()
+          );
+          return String(master?.segment || 'Other').trim() || 'Other';
+        };
+
+        const getSku = row => String(row.sku || row.material || row.materialCode || '').trim();
+        const getDesc = row => String(
+          row.description || row.desc || row.materialDescription || row.material_desc || row.namaMaterial || row.materialName || ''
+        ).trim();
+        const getType = row => String(row.transType || row.type || row.transactionType || row.transaction || '').trim();
+        const getValue = (row, date) => Number(
+          (row.values && row.values[date]) ?? row[date] ?? 0
+        ) || 0;
+
+        // Kelompokkan berdasarkan Segment lalu SKU.
+        const segmentGroups = {};
+        rows.forEach((row, originalIndex) => {
+          const segment = getSegment(row);
+          const sku = getSku(row) || '-';
+          if (!segmentGroups[segment]) segmentGroups[segment] = {};
+          if (!segmentGroups[segment][sku]) {
+            segmentGroups[segment][sku] = {
+              sku,
+              desc: getDesc(row),
+              rows: []
+            };
+          }
+          if (!segmentGroups[segment][sku].desc && getDesc(row)) {
+            segmentGroups[segment][sku].desc = getDesc(row);
+          }
+          segmentGroups[segment][sku].rows.push({ row, originalIndex });
+        });
+
+        const segmentRank = (segment) => {
+          const s = String(segment).toLowerCase();
+          if (s === 'retail') return 1;
+          if (s === 'project') return 2;
+          return 3;
+        };
+
+        const orderedSegments = Object.keys(segmentGroups).sort((a,b) => {
+          const diff = segmentRank(a) - segmentRank(b);
+          return diff || a.localeCompare(b);
+        });
+
+        head.innerHTML = '<tr>' +
+          '<th class="sticky-sku">SKU MATERIAL</th>' +
+          '<th class="sticky-desc">MATERIAL DESCRIPTION</th>' +
+          '<th class="sticky-type">TRANSAKSI</th>' +
+          dates.map((d, i) => {
+            const label = `${String(i+1).padStart(2,'0')}-${new Date(d + 'T00:00:00').toLocaleString('en-US',{month:'short'})}`;
+            return `<th title="${d}">${label}</th>`;
+          }).join('') +
+          '<th>TOTAL</th></tr>';
+
+        let html = '';
+        const grandDayTotals = Object.fromEntries(dates.map(d => [d, 0]));
+
+        orderedSegments.forEach(segment => {
+          const skuGroups = Object.values(segmentGroups[segment]).sort((a,b) => a.sku.localeCompare(b.sku));
+          const colspan = dates.length + 4;
+
+          html += `<tr class="matrix-segment-row">
+            <td colspan="${colspan}" style="position:sticky;left:0;z-index:4;background:#e2e8f0;color:#0f172a;font-weight:800;padding:9px 12px;border-bottom:1px solid var(--border);">
+              <i class="fas fa-layer-group"></i>&nbsp; ${escapeHtml(String(segment).toUpperCase())}
+              <span style="font-size:10px;color:#64748b;margin-left:8px;">${skuGroups.length} SKU</span>
+            </td>
+          </tr>`;
+
+          skuGroups.forEach(group => {
+            const sku = escapeHtml(group.sku);
+            const desc = escapeHtml(group.desc || '-');
+
+            group.rows.sort((a,b) => {
+              const ta = getType(a.row).toLowerCase();
+              const tb = getType(b.row).toLowerCase();
+              const stockRank = t => t.includes('stock on hand') || t.includes('stok on hand') || t === 'on hand' ? 99 : 1;
+              return stockRank(ta) - stockRank(tb) || ta.localeCompare(tb);
+            });
+
+            group.rows.forEach((obj, idx) => {
+              const row = obj.row;
+              const originalIndex = obj.originalIndex;
+              const typeRaw = getType(row) || '-';
+              const typeLower = typeRaw.toLowerCase();
+              const isStock = typeLower.includes('stock on hand') || typeLower.includes('stok on hand') || typeLower === 'on hand';
+              let rowTotal = 0;
+
+              html += `<tr class="${isStock ? 'matrix-stock-row' : ''}">
+                <td class="sticky-sku matrix-sku-cell" title="${sku}">${idx === 0 ? sku : ''}</td>
+                <td class="sticky-desc matrix-desc-cell" title="${desc}">${idx === 0 ? desc : ''}</td>
+                <td class="sticky-type">${isStock ? '↳ ' : '↳ '}${escapeHtml(typeRaw)}</td>`;
+
+              dates.forEach(date => {
+                const value = getValue(row, date);
+                rowTotal += value;
+                grandDayTotals[date] += value;
+                const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
+                html += `<td class="matrix-qty ${cls}" data-row="${originalIndex}" data-date="${date}" onclick="editMatrixQty(this)" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
+              });
+
+              html += `<td style="text-align:right;font-weight:800;">${formatMatrixQty(rowTotal)}</td></tr>`;
+            });
+          });
+        });
+
+        const grandTotal = dates.reduce((sum,d) => sum + grandDayTotals[d], 0);
+        html += `<tr class="matrix-total">
+          <td class="sticky-sku">TOTAL</td>
+          <td class="sticky-desc">ALL MATERIAL</td>
+          <td class="sticky-type">RETAIL + PROJECT</td>
+          ${dates.map(d => `<td style="text-align:right;">${formatMatrixQty(grandDayTotals[d])}</td>`).join('')}
+          <td style="text-align:right;">${formatMatrixQty(grandTotal)}</td>
+        </tr>`;
+
+        body.innerHTML = html;
+      }
+
+
+      function editMatrixQty(cell) {
+        if (!cell || cell.classList.contains('editing')) return;
+
+        const ri = Number(cell.dataset.row);
+        const date = cell.dataset.date;
+        const row = stockTransactionMatrixData.rows[ri];
+        if (!row) return;
+
+        const oldValue = Number((row.values && row.values[date]) ?? row[date] ?? 0) || 0;
+        cell.classList.add('editing');
+
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.step = '0.01';
+        input.value = oldValue;
+        input.setAttribute('aria-label', `Qty ${row.sku || ''} ${date}`);
+
+        cell.innerHTML = '';
+        cell.appendChild(input);
+        input.focus();
+        input.select();
+
+        let finished = false;
+        const finish = (save) => {
+          if (finished) return;
+          finished = true;
+
+          let newValue = Number(input.value);
+          if (!Number.isFinite(newValue)) newValue = oldValue;
+
+          if (save && newValue !== oldValue) {
+            if (!row.values) row.values = {};
+            row.values[date] = newValue;
+            matrixDirtyChanges[matrixCellKey(ri, date)] = {
+              rowIndex: ri,
+              date: date,
+              sku: row.sku || row.material || '',
+              transType: row.transType || row.type || row.transactionType || '',
+              oldQty: oldValue,
+              qty: newValue
+            };
+          }
+
+          renderStockTransactionMatrix();
+          updateMatrixEditCount();
+        };
+
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') { e.preventDefault(); finish(true); }
+          if (e.key === 'Escape') { e.preventDefault(); finish(false); }
+        });
+        input.addEventListener('blur', () => finish(true));
+      }
+
+      function updateMatrixEditCount() {
+        const el = document.getElementById('matrixEditCount');
+        if (el) el.textContent = `${Object.keys(matrixDirtyChanges).length} revisi`;
+      }
+
+      async function saveStockTransactionMatrix() {
+        const changes = Object.values(matrixDirtyChanges);
+        if (!changes.length) {
+          showAlert('Informasi', 'Belum ada Qty yang diubah.');
+          return;
+        }
+
+        showConfirm(
+          `Simpan <b>${changes.length}</b> perubahan Qty ke database?`,
+          async () => {
+            showLoading(true);
+            try {
+              const res = await apiCall('updateTransactionMatrix', {
+                changes: changes,
+                month: document.getElementById('matrixMonth')?.value,
+                year: document.getElementById('matrixYear')?.value
+              });
+
+              if (res && res.status === 'success') {
+                matrixDirtyChanges = {};
+                updateMatrixEditCount();
+                showAlert('Berhasil', 'Perubahan Qty berhasil disimpan.');
+                await loadStockTransactionMatrix();
+              } else {
+                showAlert('Gagal', res?.message || 'Backend belum mendukung updateTransactionMatrix.');
+              }
+            } catch (e) {
+              showAlert('Gagal', e.message || 'Gagal menyimpan perubahan.');
+            } finally {
+              showLoading(false);
+            }
+          }
+        );
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? '')
+          .replace(/&/g,'&amp;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;')
+          .replace(/'/g,'&#039;');
+      }
+
       async function loadTodayRecords() { 
           const d = await apiCall('getTodayRecords');
           if(d && Array.isArray(d)) {
