@@ -137,6 +137,15 @@
         background:#f8fafc; color:#0f172a; border-radius:10px; padding:10px; margin-top:8px;
         border-left:4px solid #2563eb; font-size:12px;
       }
+
+      .ai-config {
+        margin-top:10px; padding:9px 10px; border-radius:10px;
+        background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+        font-size:11px; color:#cbd5e1;
+      }
+      .ai-config code { color:#fff; }
+      .ai-wake { color:#93c5fd; font-weight:600; }
+
       @media(max-width:600px){
         .ai-input-row { grid-template-columns:1fr auto; }
         .ai-input-row .send { grid-column:2; grid-row:1; }
@@ -196,6 +205,12 @@
             <button type="button" class="ai-btn send" id="aiSendBtn" title="Kirim">➤</button>
             <button type="button" class="ai-btn" id="aiVoiceBtn" title="Perintah suara">🎙️</button>
           </div>
+
+          <div class="ai-config">
+            <span class="ai-wake">Halo WMS</span> aktif. Ucapkan <b>“Halo WMS”</b> untuk memulai percakapan.
+            <span id="aiApiState"> | AI API: belum terhubung</span>
+          </div>
+
           <div class="ai-suggestions">
             <button type="button" class="ai-chip" data-ai="Stok SKU paling tua sekarang apa?">📦 Stok tertua</button>
             <button type="button" class="ai-chip" data-ai="Cek kondisi stok hari ini">📊 Cek stok</button>
@@ -982,6 +997,11 @@
          Optional server-side AI can be enabled through AI_API_ACTION.
          ================================ */
       const AI_API_ACTION = 'aiChat';
+      // Google Apps Script khusus Halo WMS / OpenAI
+      const AI_SERVER_URL = 'https://script.google.com/macros/s/AKfycbw6z3npRuyuT7PsXA09c12PQzQkVEXQseLUyDqc3kamZFh-mp3YPn6gmNcqmIp0CiJuMw/exec';
+      // The API key MUST stay on the server (Google Apps Script), never in this HTML.
+      // Apps Script should implement action=aiChat and call OpenAI Responses API.
+      const AI_WAKE_PHRASE = 'halo wms';
       let aiConversation = [];
       let recognition = null;
       let isListening = false;
@@ -1039,7 +1059,57 @@
         return Array.isArray(cachedReportSummary) ? cachedReportSummary : [];
       }
 
-      async function localAiReasoning(userText) {
+
+      async function askServerAI(userText) {
+        const state = document.getElementById('aiApiState');
+        const context = {
+          message: String(userText || ''),
+          history: aiConversation.slice(-12),
+          stockSummary: Array.isArray(cachedReportSummary) ? cachedReportSummary.slice(0,300) : [],
+          masterData: Array.isArray(masterData) ? masterData.slice(0,800) : [],
+          system: `Anda adalah WMS Copilot untuk operasional warehouse finished goods.
+Jawab dalam Bahasa Indonesia yang natural, ringkas, profesional, seperti rekan kerja.
+Pahami konteks percakapan. Gunakan data WMS yang diberikan sebagai sumber utama.
+Jangan mengarang stok, BIN, LOT, quantity, atau transaksi.
+Jika data belum tersedia, katakan dengan jelas.
+Anda boleh memberikan rekomendasi, tetapi jangan mengeksekusi transaksi tanpa konfirmasi user.
+Jika user meminta transaksi, buat draft dan minta konfirmasi.`
+        };
+        try {
+          const response = await fetch(AI_SERVER_URL, {
+            method: 'POST',
+            headers: {'Content-Type': 'text/plain;charset=utf-8'},
+            body: JSON.stringify(Object.assign({action: AI_API_ACTION}, context))
+          });
+          const server = await response.json();
+          if (server && server.status === 'success' && server.reply) {
+            if (state) state.textContent = ' | AI API: terhubung';
+            return String(server.reply);
+          }
+          if (state) state.textContent = ' | AI API: belum tersedia';
+        } catch(e) {
+          if (state) state.textContent = ' | AI API: error';
+        }
+        return null;
+      }
+
+      
+      async function testAIConnection() {
+        try {
+          const r = await fetch(AI_SERVER_URL, {method:'GET'});
+          const d = await r.json();
+          if (d && d.status === 'success') {
+            const el = document.getElementById('aiApiState');
+            if (el) el.textContent = ' | AI API: terhubung';
+            return true;
+          }
+        } catch(e) {}
+        const el = document.getElementById('aiApiState');
+        if (el) el.textContent = ' | AI API: belum terhubung';
+        return false;
+      }
+
+async function localAiReasoning(userText) {
         const q = String(userText || '').trim();
         const lower = q.toLowerCase();
         if (!q) return 'Silakan sampaikan pertanyaannya, Pak.';
@@ -1112,21 +1182,11 @@
           }
         }
 
-        // Optional server-side AI. This action must be implemented in Apps Script to use it.
-        try {
-          const context = {
-            message: q,
-            history: aiConversation.slice(-8),
-            stockSummary: Array.isArray(cachedReportSummary) ? cachedReportSummary.slice(0,200) : [],
-            masterData: Array.isArray(masterData) ? masterData.slice(0,500) : []
-          };
-          const server = await apiCall(AI_API_ACTION, context);
-          if (server && server.status === 'success' && server.reply) return String(server.reply);
-        } catch(e) {
-          console.warn('AI server fallback:', e);
-        }
+        // Full ChatGPT-style reasoning comes from the server when configured.
+        const serverReply = await askServerAI(q);
+        if (serverReply) return serverReply;
 
-        return 'Saya memahami perintahnya, tetapi untuk pertanyaan tersebut saya belum memiliki aturan analisis yang sesuai. Coba tanyakan stok, FIFO, aging, risiko stock out, atau minta saya menyiapkan draft transaksi.';
+        return 'Saya memahami perintahnya, tetapi AI server belum terhubung. Untuk sementara saya masih bisa membantu dengan stok, FIFO, aging, risiko stock out, dan draft transaksi.';
       }
 
       async function aiAsk(text, speak=true) {
@@ -1150,6 +1210,24 @@
         }
       }
 
+
+      let wakeBuffer = '';
+      function handleWakePhrase(transcript) {
+        const t = String(transcript || '').toLowerCase().trim();
+        if (!t) return false;
+        if (t.includes(AI_WAKE_PHRASE)) {
+          const after = t.split(AI_WAKE_PHRASE).slice(1).join(AI_WAKE_PHRASE).trim();
+          if (after) {
+            aiAsk(after, true);
+          } else {
+            aiAddMessage('assistant', 'Ya Pak, saya siap. Silakan bicara.');
+            aiSpeak('Ya Pak, saya siap. Silakan bicara.');
+          }
+          return true;
+        }
+        return false;
+      }
+
       function initVoiceAssistant() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const btn = document.getElementById('aiVoiceBtn');
@@ -1157,6 +1235,8 @@
         const send = document.getElementById('aiSendBtn');
 
         if (send) send.addEventListener('click', () => aiAsk(input.value, true));
+        const apiState = document.getElementById('aiApiState');
+        if (apiState) apiState.textContent = ' | AI API: menunggu koneksi';
         if (input) input.addEventListener('keydown', e => {
           if (e.key === 'Enter') aiAsk(input.value, true);
         });
@@ -1175,7 +1255,7 @@
 
         recognition = new SpeechRecognition();
         recognition.lang = 'id-ID';
-        recognition.continuous = false;
+        recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
 
@@ -1191,6 +1271,10 @@
             transcript += event.results[i][0].transcript;
           }
           if (input) input.value = transcript;
+          if (handleWakePhrase(transcript)) {
+            input.value = '';
+            try { recognition.stop(); } catch(e) {}
+          }
         };
         recognition.onerror = event => {
           console.warn('Speech recognition:', event.error);
@@ -1204,7 +1288,11 @@
           btn.classList.remove('listening');
           btn.textContent = '🎙️';
           aiSetStatus('Siap membantu');
-          if (input && input.value.trim()) aiAsk(input.value.trim(), true);
+          const spoken = input ? input.value.trim() : '';
+          if (spoken && !spoken.toLowerCase().includes(AI_WAKE_PHRASE)) {
+            // Manual voice mode: process spoken command even without wake phrase.
+            aiAsk(spoken, true);
+          }
         };
 
         btn.addEventListener('click', () => {
