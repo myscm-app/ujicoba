@@ -429,6 +429,7 @@
         pointer-events:none;
         transition:opacity .18s ease, visibility .18s ease;
         isolation:isolate;
+        transform:translateZ(0);
       }
       #matrixQtyConfirm.is-open {
         display:flex !important;
@@ -515,7 +516,7 @@
     <div id="matrixQtyConfirm" hidden class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true">
       <div class="matrix-confirm-box">
         <div class="matrix-confirm-head">
-          <div style="font-size:16px;font-weight:800;color:#0f172a;">Konfirmasi Revisi Qty</div>
+          <div style="font-size:16px;font-weight:800;color:#0f172a;"><i class="fas fa-shield-alt" style="color:#2563eb;margin-right:7px;"></i>Konfirmasi Revisi Qty</div>
           <div style="font-size:11px;color:#64748b;margin-top:3px;">Perubahan akan langsung disimpan ke database.</div>
         </div>
         <div id="matrixQtyConfirmMsg" class="matrix-confirm-body"></div>
@@ -1398,18 +1399,6 @@
         }
       }, true);
 
-      document.addEventListener('keydown', function (event) {
-        // Tombol Enter saat input editor aktif -> buka popup.
-        const input = event.target.closest('#stockTransactionMatrix td.matrix-qty input');
-        if (!input) return;
-
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          event.stopPropagation();
-        }
-      });
-
-
       // ================================================================
       // MATRIX QTY EDITOR — CENTRALIZED / ROBUST POPUP
       // Tidak bergantung pada handler per-cell sehingga popup tetap muncul
@@ -1460,22 +1449,34 @@
           cell.appendChild(input);
           this.input = input;
 
+          // Bind langsung ke input editor: ini menghindari konflik bubbling/capture dari handler lain.
           input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              e.stopPropagation();
-              this.confirm();
-            } else if (e.key === 'Escape') {
-              e.preventDefault();
-              e.stopPropagation();
-              this.cancel();
+              e.stopImmediatePropagation();
+              window.requestAnimationFrame(() => this.confirm());
+              return;
             }
-          });
+            if (e.key === 'Escape') {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              window.requestAnimationFrame(() => this.cancel());
+            }
+          }, true);
+
+          // Beberapa browser/keyboard lebih konsisten memicu keyup untuk Enter.
+          input.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopImmediatePropagation();
+              if (!this.isOpen()) this.confirm();
+            }
+          }, true);
 
           input.addEventListener('blur', () => {
-            setTimeout(() => {
-              if (this.cell === cell && !this.isOpen()) this.confirm();
-            }, 120);
+            window.setTimeout(() => {
+              if (this.cell === cell && !this.isOpen() && !this.busy) this.confirm();
+            }, 80);
           });
 
           input.focus();
@@ -1668,21 +1669,24 @@
       }, true);
 
       document.addEventListener('keydown', function(event) {
+        // Hanya tangani Escape saat popup memang sudah terbuka.
         if (event.key === 'Escape' && matrixQtyEditor.isOpen()) {
           event.preventDefault();
           event.stopImmediatePropagation();
           matrixQtyEditor.cancel();
-          return;
         }
+      }, true);
 
-        const input = event.target.closest('#stockTransactionMatrix td.matrix-qty input');
-        if (!input) return;
-
-        if (event.key === 'Enter') {
-          event.preventDefault();
-          event.stopImmediatePropagation();
-          matrixQtyEditor.confirm();
-        }
+      // Fallback keyboard global: bila Enter lolos dari handler input, tetap tampilkan popup.
+      document.addEventListener('keyup', function(event) {
+        if (event.key !== 'Enter' || matrixQtyEditor.isOpen()) return;
+        const input = event.target && event.target.closest
+          ? event.target.closest('#stockTransactionMatrix td.matrix-qty input')
+          : null;
+        if (!input || matrixQtyEditor.input !== input) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        matrixQtyEditor.confirm();
       }, true);
 
       function escapeHtml(value) {
