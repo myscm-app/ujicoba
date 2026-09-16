@@ -541,7 +541,122 @@
       }
 
 
-      .matrix-qty-confirm-overlay {
+      
+      /* Restored custom WMS confirmation dialog */
+      #custom-confirm.wms-confirm-overlay {
+        position:fixed;
+        inset:0;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:18px;
+        background:rgba(15,23,42,.56);
+        backdrop-filter:blur(2px);
+        -webkit-backdrop-filter:blur(2px);
+        z-index:2147483001;
+        opacity:0;
+        visibility:hidden;
+        pointer-events:none;
+        transition:opacity .16s ease, visibility .16s ease;
+      }
+      #custom-confirm.wms-confirm-overlay.is-open {
+        opacity:1;
+        visibility:visible;
+        pointer-events:auto;
+      }
+      .wms-confirm-box {
+        width:min(450px,94vw);
+        background:#fff;
+        border:1px solid #d9e2ee;
+        border-radius:16px;
+        box-shadow:0 24px 70px rgba(15,23,42,.28);
+        overflow:hidden;
+        transform:translateY(8px) scale(.985);
+        transition:transform .16s ease;
+      }
+      #custom-confirm.is-open .wms-confirm-box {
+        transform:translateY(0) scale(1);
+      }
+      .wms-confirm-head {
+        min-height:58px;
+        padding:12px 16px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        border-bottom:1px solid #e5eaf1;
+        background:#f8fafc;
+      }
+      .wms-confirm-title {
+        display:flex;
+        align-items:center;
+        gap:10px;
+        color:#0f172a;
+        font-size:14px;
+        font-weight:800;
+      }
+      .wms-confirm-icon {
+        width:30px;
+        height:30px;
+        border-radius:9px;
+        display:grid;
+        place-items:center;
+        background:#eff6ff;
+        color:#2563eb;
+        border:1px solid #bfdbfe;
+      }
+      .wms-confirm-close {
+        width:30px;
+        height:30px;
+        padding:0;
+        border:0;
+        background:transparent;
+        color:#64748b;
+        font-size:22px;
+        line-height:1;
+        border-radius:8px;
+        cursor:pointer;
+      }
+      .wms-confirm-close:hover { background:#eef2f7; color:#0f172a; }
+      .wms-confirm-body {
+        padding:20px 18px;
+        color:#334155;
+        font-size:12px;
+        line-height:1.7;
+      }
+      .wms-confirm-actions {
+        display:flex;
+        justify-content:flex-end;
+        gap:9px;
+        padding:0 18px 18px;
+      }
+      .wms-confirm-btn {
+        min-width:82px;
+        height:38px;
+        padding:0 16px;
+        border-radius:10px;
+        font-size:12px;
+        font-weight:800;
+        cursor:pointer;
+      }
+      .wms-confirm-cancel {
+        color:#334155;
+        background:#f1f5f9;
+        border:1px solid #dbe3ec;
+      }
+      .wms-confirm-cancel:hover { background:#e8eef5; }
+      .wms-confirm-ok {
+        color:#fff;
+        background:#2563eb;
+        border:1px solid #2563eb;
+        box-shadow:0 7px 18px rgba(37,99,235,.20);
+      }
+      .wms-confirm-ok:hover {
+        background:#1d4ed8;
+        border-color:#1d4ed8;
+      }
+
+.matrix-qty-confirm-overlay {
         position:fixed !important;
         inset:0 !important;
         background:rgba(15,23,42,.60) !important;
@@ -558,7 +673,26 @@
     <div id="loading" aria-hidden="true" style="display:none !important;"></div>
     
         <!-- Dedicated confirmation for Matrix Qty revision -->
-    <div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:flex;opacity:0;visibility:hidden;pointer-events:none;">
+    
+    <!-- Restored custom WMS confirmation dialog -->
+    <div id="custom-confirm" class="wms-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="wms-confirm-box" role="document">
+        <div class="wms-confirm-head">
+          <div class="wms-confirm-title">
+            <span class="wms-confirm-icon"><i class="fas fa-shield-alt"></i></span>
+            <span>Konfirmasi Proses</span>
+          </div>
+          <button type="button" id="customConfirmClose" class="wms-confirm-close" aria-label="Tutup">×</button>
+        </div>
+        <div id="customConfirmMsg" class="wms-confirm-body"></div>
+        <div class="wms-confirm-actions">
+          <button type="button" id="customConfirmCancel" class="wms-confirm-btn wms-confirm-cancel">Cancel</button>
+          <button type="button" id="customConfirmOk" class="wms-confirm-btn wms-confirm-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+<div id="matrixQtyConfirm" class="matrix-qty-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true" style="display:flex;opacity:0;visibility:hidden;pointer-events:none;">
       <div class="matrix-confirm-box">
         <div class="matrix-confirm-head">
           <div style="font-size:16px;font-weight:800;color:#0f172a;"><i class="fas fa-shield-alt" style="color:#2563eb;margin-right:7px;"></i>Konfirmasi Revisi Qty</div>
@@ -1102,16 +1236,73 @@
       }
 
       function showConfirm(message, callback) {
-        // Konfirmasi generik untuk menu lain.
-        // Popup HTML generik "Ya, Lanjutkan" sengaja dihapus agar
-        // tidak pernah mengganggu popup revisi Matrix.
-        const text = String(message || '')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]*>/g, '');
+        const overlay = document.getElementById('custom-confirm');
+        const msg = document.getElementById('customConfirmMsg');
+        const ok = document.getElementById('customConfirmOk');
+        const cancel = document.getElementById('customConfirmCancel');
+        const close = document.getElementById('customConfirmClose');
 
-        if (window.confirm(text)) {
-          callback();
+        if (!overlay || !msg || !ok || !cancel) {
+          console.error('Custom confirmation dialog is missing.');
+          return;
         }
+
+        let closed = false;
+
+        const closeDialog = () => {
+          if (closed) return;
+          closed = true;
+          overlay.classList.remove('is-open');
+          overlay.setAttribute('aria-hidden', 'true');
+          ok.onclick = null;
+          cancel.onclick = null;
+          if (close) close.onclick = null;
+          overlay.onclick = null;
+          document.removeEventListener('keydown', escHandler, true);
+        };
+
+        const escHandler = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDialog();
+          }
+        };
+
+        msg.innerHTML = String(message || '');
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+
+        ok.onclick = async () => {
+          if (closed) return;
+          closed = true;
+          overlay.classList.remove('is-open');
+          overlay.setAttribute('aria-hidden', 'true');
+          ok.onclick = null;
+          cancel.onclick = null;
+          if (close) close.onclick = null;
+          overlay.onclick = null;
+          document.removeEventListener('keydown', escHandler, true);
+
+          if (typeof callback === 'function') {
+            try {
+              await callback();
+            } catch (err) {
+              console.error('Confirmation callback error:', err);
+              showAlert('Gagal', 'Proses tidak dapat dilanjutkan.');
+            }
+          }
+        };
+
+        cancel.onclick = closeDialog;
+        if (close) close.onclick = closeDialog;
+        overlay.onclick = (e) => {
+          if (e.target === overlay) closeDialog();
+        };
+        document.addEventListener('keydown', escHandler, true);
+
+        setTimeout(() => {
+          if (!closed) ok.focus();
+        }, 30);
       }
 
       async function apiCall(action, payload = null) {
