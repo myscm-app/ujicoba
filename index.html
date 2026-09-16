@@ -413,6 +413,49 @@
         #stockTransactionMatrix .sticky-type { left:145px; min-width:160px; }
       }
 
+
+      /* Matrix Qty popup — isolated from generic transaction confirmation */
+      #matrixQtyConfirm[hidden] { display:none !important; }
+      #matrixQtyConfirm:not([hidden]) { display:flex !important; }
+      #matrixQtyConfirm .matrix-confirm-box {
+        width:min(430px,94vw);
+        background:#fff;
+        border-radius:16px;
+        box-shadow:0 24px 80px rgba(15,23,42,.28);
+        overflow:hidden;
+        border:1px solid #dbe4ef;
+      }
+      #matrixQtyConfirm .matrix-confirm-head {
+        padding:18px 20px;
+        border-bottom:1px solid #e2e8f0;
+        background:#f8fafc;
+      }
+      #matrixQtyConfirm .matrix-confirm-body {
+        padding:20px;
+        color:#334155;
+        font-size:12px;
+        line-height:1.6;
+      }
+      #matrixQtyConfirm .matrix-confirm-actions {
+        display:flex;
+        justify-content:flex-end;
+        gap:10px;
+        padding:0 20px 18px;
+      }
+
+
+      .matrix-qty-confirm-overlay {
+        position:fixed !important;
+        inset:0 !important;
+        background:rgba(15,23,42,.60) !important;
+        z-index:2147483647 !important;
+        align-items:center;
+        justify-content:center;
+        padding:20px;
+      }
+      .matrix-qty-confirm-overlay[hidden] { display:none !important; }
+      .matrix-qty-confirm-overlay:not([hidden]) { display:flex !important; }
+
     </style>
   </head>
   <body>
@@ -446,31 +489,18 @@
       </div>
     </div>
     
-    <div id="custom-notification">
-      <h3 id="notif-title" style="margin-top:0; color: var(--primary);">Alert</h3>
-      <div id="notif-message" style="color: var(--text-muted);">Message</div>
-    </div>
-
-    <div id="custom-confirm">
-      <div class="modal-box">
-        <h3 style="margin-top:0; color: var(--text-main);">Konfirmasi</h3>
-        <p id="confirm-msg" style="color: var(--text-muted); margin-bottom: 20px;"></p>
-        <div style="display:flex; gap:10px; justify-content:center;">
-          <button id="btn-confirm-cancel" class="btn-danger" style="padding: 10px 20px;">Batal</button>
-          <button id="btn-confirm-ok" class="btn-primary" style="padding: 10px 20px; width: auto;">Ya, Lanjutkan</button>
-        </div>
-      </div>
+    
     </div>
 
     <!-- Dedicated confirmation for Matrix Qty revision -->
-    <div id="matrixQtyConfirm" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:20000;align-items:center;justify-content:center;padding:20px;">
-      <div style="width:min(430px,94vw);background:#fff;border-radius:16px;box-shadow:0 24px 80px rgba(15,23,42,.28);overflow:hidden;">
-        <div style="padding:18px 20px;border-bottom:1px solid #e2e8f0;background:#f8fafc;">
+    <div id="matrixQtyConfirm" hidden class="matrix-qty-confirm-overlay">
+      <div class="matrix-confirm-box">
+        <div class="matrix-confirm-head">
           <div style="font-size:16px;font-weight:800;color:#0f172a;">Konfirmasi Revisi Qty</div>
           <div style="font-size:11px;color:#64748b;margin-top:3px;">Perubahan akan langsung disimpan ke database.</div>
         </div>
-        <div id="matrixQtyConfirmMsg" style="padding:20px;color:#334155;font-size:12px;line-height:1.6;"></div>
-        <div style="display:flex;justify-content:flex-end;gap:10px;padding:0 20px 18px;">
+        <div id="matrixQtyConfirmMsg" class="matrix-confirm-body"></div>
+        <div class="matrix-confirm-actions">
           <button type="button" id="matrixQtyCancel" class="btn-danger" style="padding:10px 18px;">Batal</button>
           <button type="button" id="matrixQtySave" class="btn-primary" style="padding:10px 18px;width:auto;">Simpan</button>
         </div>
@@ -478,7 +508,7 @@
     </div>
 
     <div id="app-view" class="app-container">
-      <header>
+      <header style="position:relative;z-index:10;">
         <div class="brand-group">
           <div class="brand">
             <span style="background:var(--primary); color:white; padding:4px 8px; border-radius:6px;">WMS</span> WMS Warehouse Management System
@@ -705,6 +735,18 @@
     </div>
 
     <script>
+
+      // Defense-in-depth: jika ada kode lama/cache yang mencoba menampilkan
+      // #custom-confirm saat Matrix sedang edit, sembunyikan segera.
+      const matrixLegacyGuard = new MutationObserver(function() {
+        const legacy = document.getElementById('custom-confirm');
+        if (legacy) {
+          legacy.style.setProperty('display', 'none', 'important');
+          legacy.remove();
+        }
+      });
+      matrixLegacyGuard.observe(document.body, { childList: true, subtree: true });
+
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
         const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec'; 
@@ -790,25 +832,39 @@
       showDailyWisdom();
 
       function showAlert(title, message) {
-        document.getElementById('notif-title').innerText = title;
-        document.getElementById('notif-message').innerHTML = message;
-        document.getElementById('custom-notification').classList.add('active');
-        setTimeout(() => document.getElementById('custom-notification').classList.remove('active'), 3500);
+        const oldToast = document.getElementById('wms-clean-toast');
+        if (oldToast) oldToast.remove();
+
+        const toast = document.createElement('div');
+        toast.id = 'wms-clean-toast';
+        toast.style.cssText = [
+          'position:fixed','right:22px','bottom:22px','z-index:2147483000',
+          'background:#0f172a','color:#fff','padding:12px 16px','border-radius:10px',
+          'box-shadow:0 12px 30px rgba(15,23,42,.22)','font-size:12px','font-weight:700',
+          'max-width:360px'
+        ].join(';');
+        toast.innerHTML = `<div style="font-weight:800;margin-bottom:3px;">${escapeHtml(title || '')}</div>
+                           <div style="font-weight:500;opacity:.92;">${message || ''}</div>`;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          toast.style.transition = 'opacity .2s ease';
+          setTimeout(() => toast.remove(), 220);
+        }, 3000);
       }
 
       function showConfirm(message, callback) {
-        const modal = document.getElementById('custom-confirm');
-        document.getElementById('confirm-msg').innerHTML = message;
-        modal.style.display = 'flex';
-        
-        const btnOk = document.getElementById('btn-confirm-ok');
-        const btnCancel = document.getElementById('btn-confirm-cancel');
-        
-        btnOk.onclick = null;
-        btnCancel.onclick = null;
-        
-        btnOk.onclick = () => { modal.style.display = 'none'; callback(); };
-        btnCancel.onclick = () => { modal.style.display = 'none'; };
+        // Konfirmasi generik untuk menu lain.
+        // Popup HTML generik "Ya, Lanjutkan" sengaja dihapus agar
+        // tidak pernah mengganggu popup revisi Matrix.
+        const text = String(message || '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]*>/g, '');
+
+        if (window.confirm(text)) {
+          callback();
+        }
       }
 
       async function apiCall(action, payload = null) {
@@ -1212,15 +1268,14 @@
         body.innerHTML = html;
       }
 
-
-      // Delegated click handler: lebih andal daripada inline onclick,
-      // terutama setelah tbody di-render ulang secara dinamis.
+      // Klik di dalam popup Matrix jangan diteruskan ke popup/handler WMS lain.
       document.addEventListener('click', function (event) {
-        const cell = event.target.closest('#stockTransactionMatrix td.matrix-qty');
-        if (!cell) return;
-
-        editMatrixQty(cell);
-      });
+        const modal = document.getElementById('matrixQtyConfirm');
+        if (!modal || modal.hidden) return;
+        if (event.target.closest('#matrixQtyConfirm')) {
+          event.stopPropagation();
+        }
+      }, true);
 
       document.addEventListener('keydown', function (event) {
         // Tombol Enter saat input editor aktif -> buka popup.
@@ -1232,6 +1287,43 @@
           event.stopPropagation();
         }
       });
+
+
+      // MATRIX ONLY: klik Qty selalu masuk mode edit.
+      // Event dihentikan pada capture phase agar handler WMS lain tidak ikut terpanggil.
+      document.addEventListener('click', function (event) {
+        const cell = event.target.closest('#stockTransactionMatrix td.matrix-qty');
+        if (!cell || event.target.closest('#matrixQtyConfirm')) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+
+        if (!cell.classList.contains('editing')) {
+          editMatrixQty(cell);
+        }
+      }, true);
+
+      // MATRIX ONLY: Enter/Escape ditangani sebelum handler lain.
+      document.addEventListener('keydown', function (event) {
+        const input = event.target.closest('#stockTransactionMatrix td.matrix-qty input');
+        if (!input) return;
+
+        event.stopImmediatePropagation();
+
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          const editorCell = input.closest('td.matrix-qty');
+          if (editorCell && typeof editorCell._openMatrixConfirm === 'function') {
+            editorCell._openMatrixConfirm();
+          }
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          const editorCell = input.closest('td.matrix-qty');
+          if (editorCell && typeof editorCell._cancelMatrixEdit === 'function') {
+            editorCell._cancelMatrixEdit();
+          }
+        }
+      }, true);
 
       async function editMatrixQty(cell) {
         if (!cell || cell.classList.contains('editing')) return;
@@ -1249,35 +1341,46 @@
         input.type = 'number';
         input.step = '0.01';
         input.value = oldValue;
-        input.style.width = '100%';
-        input.style.boxSizing = 'border-box';
-        input.style.textAlign = 'right';
-        input.style.fontWeight = '800';
-        input.style.border = '1px solid #2563eb';
-        input.style.borderRadius = '6px';
-        input.style.padding = '5px 7px';
+        input.autocomplete = 'off';
+        input.style.cssText =
+          'width:100%;box-sizing:border-box;text-align:right;font-weight:800;' +
+          'border:2px solid #2563eb;border-radius:6px;padding:6px 8px;outline:none;background:#fff;';
 
         cell.innerHTML = '';
         cell.appendChild(input);
-        input.focus();
-        input.select();
 
-        let finished = false;
-        let confirmationOpen = false;
-        let blurTimer = null;
+        let closed = false;
+        let confirmOpen = false;
 
-        const closeWithoutSave = () => {
-          if (finished) return;
-          finished = true;
-          if (blurTimer) clearTimeout(blurTimer);
+        const modal = document.getElementById('matrixQtyConfirm');
+        const msgEl = document.getElementById('matrixQtyConfirmMsg');
+        const btnSave = document.getElementById('matrixQtySave');
+        const btnCancel = document.getElementById('matrixQtyCancel');
+
+        function redraw() {
           renderStockTransactionMatrix();
           updateMatrixEditCount();
-        };
+        }
 
-        const saveToBackend = async (newValue) => {
-          if (finished) return;
-          finished = true;
-          confirmationOpen = false;
+        function cancelEdit() {
+          if (closed) return;
+          closed = true;
+          confirmOpen = false;
+          cell._openMatrixConfirm = null;
+          cell._cancelMatrixEdit = null;
+
+          if (modal) modal.hidden = true;
+          redraw();
+        }
+
+        async function saveEdit(newValue) {
+          if (closed) return;
+          closed = true;
+          confirmOpen = false;
+          cell._openMatrixConfirm = null;
+          cell._cancelMatrixEdit = null;
+
+          if (modal) modal.hidden = true;
 
           const change = {
             rowIndex: ri,
@@ -1299,120 +1402,95 @@
               year: document.getElementById('matrixYear')?.value
             });
 
+            redraw();
+
             if (res && res.status === 'success') {
               if (!row.values) row.values = {};
               row.values[date] = newValue;
               delete matrixDirtyChanges[matrixCellKey(ri, date)];
-
-              renderStockTransactionMatrix();
-              updateMatrixEditCount();
+              redraw();
 
               showAlert(
                 'Berhasil',
-                `Qty <b>${escapeHtml(row.sku || '')}</b> pada <b>${escapeHtml(formatMatrixDate(date))}</b> berhasil disimpan: <b>${formatMatrixQty(newValue)}</b>.`
+                `Qty <b>${escapeHtml(row.sku || '')}</b> berhasil diubah menjadi <b>${formatMatrixQty(newValue)}</b>.`
               );
             } else {
-              renderStockTransactionMatrix();
-              updateMatrixEditCount();
               showAlert('Gagal', res?.message || 'Perubahan Qty belum tersimpan.');
             }
           } catch (err) {
-            renderStockTransactionMatrix();
-            updateMatrixEditCount();
+            redraw();
             showAlert('Gagal', err?.message || 'Gagal menyimpan perubahan Qty.');
           } finally {
             showLoading(false);
           }
-        };
+        }
 
-        const openConfirm = () => {
-          if (finished || confirmationOpen) return;
+        function openConfirm() {
+          if (closed || confirmOpen) return;
 
           let newValue = Number(input.value);
           if (!Number.isFinite(newValue)) newValue = oldValue;
 
           if (newValue === oldValue) {
-            closeWithoutSave();
+            cancelEdit();
             return;
           }
 
-          confirmationOpen = true;
-
-          const modal = document.getElementById('matrixQtyConfirm');
-          const msgEl = document.getElementById('matrixQtyConfirmMsg');
-          const btnSave = document.getElementById('matrixQtySave');
-          const btnCancel = document.getElementById('matrixQtyCancel');
-
-          // Fallback: bila modal HTML tidak terbaca, tetap tampilkan dialog
-          // konfirmasi agar perubahan tidak pernah tersimpan tanpa persetujuan.
-          if (!modal || !msgEl || !btnSave || !btnCancel) {
-            const approved = window.confirm(
-              `Konfirmasi Revisi Qty\n\n` +
-              `SKU: ${row.sku || ''}\n` +
-              `Transaksi: ${row.transType || row.type || row.transactionType || ''}\n` +
-              `Tanggal: ${date}\n` +
-              `Qty: ${oldValue} -> ${newValue}\n\n` +
-              `Simpan perubahan ini?`
-            );
-            if (approved) {
-              saveToBackend(newValue);
-            } else {
-              closeWithoutSave();
-            }
-            return;
-          }
-
-          const direction = newValue
-            ? 'bertambah'
-            : 'berkurang';
+          confirmOpen = true;
 
           msgEl.innerHTML =
-            `<div style="display:grid;grid-template-columns:105px 1fr;gap:6px 10px;">` +
+            `<div style="display:grid;grid-template-columns:105px 1fr;gap:7px 10px;">` +
             `<span style="color:#64748b;">SKU</span><b>${escapeHtml(row.sku || '')}</b>` +
-            `<span style="color:#64748b;">Material</span><b>${escapeHtml(row.desc || row.description || row.materialDescription || '')}</b>` +
-            `<span style="color:#64748b;">Transaksi</span><b>${escapeHtml(row.transType || row.type || row.transactionType || '')}</b>` +
+            `<span style="color:#64748b;">Material</span><b>${escapeHtml(row.desc || '')}</b>` +
+            `<span style="color:#64748b;">Transaksi</span><b>${escapeHtml(row.transType || '')}</b>` +
             `<span style="color:#64748b;">Tanggal</span><b>${escapeHtml(formatMatrixDate(date))}</b>` +
-            `<span style="color:#64748b;">Qty</span><b style="font-size:16px;">${formatMatrixQty(oldValue)} &rarr; <span style="color:#2563eb;">${formatMatrixQty(newValue)}</span></b>` +
+            `<span style="color:#64748b;">Qty</span><b style="font-size:18px;">${formatMatrixQty(oldValue)} &rarr; <span style="color:#2563eb;">${formatMatrixQty(newValue)}</span></b>` +
             `</div>` +
-            `<div style="margin-top:14px;padding:10px;border-radius:9px;background:#eff6ff;color:#1e40af;">Qty akan ${direction}. Apakah perubahan ini akan disimpan?</div>`;
+            `<div style="margin-top:15px;padding:10px;border-radius:9px;background:#eff6ff;color:#1e40af;font-weight:600;">` +
+            `Simpan perubahan Qty ini langsung ke database?` +
+            `</div>`;
 
-          modal.style.display = 'flex';
+          modal.hidden = false;
 
-          btnSave.onclick = async () => {
-            modal.style.display = 'none';
-            await saveToBackend(newValue);
+          btnSave.onclick = function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            saveEdit(newValue);
           };
 
-          btnCancel.onclick = () => {
-            modal.style.display = 'none';
-            confirmationOpen = false;
-            closeWithoutSave();
+          btnCancel.onclick = function(e) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            cancelEdit();
           };
-        };
+        }
 
-        input.addEventListener('keydown', (e) => {
+        // Simpan/cancel function ditempel ke cell supaya listener capture
+        // dapat memanggil fungsi yang tepat untuk editor aktif.
+        cell._openMatrixConfirm = openConfirm;
+        cell._cancelMatrixEdit = cancelEdit;
+
+        input.addEventListener('keydown', function(e) {
           if (e.key === 'Enter') {
             e.preventDefault();
+            e.stopImmediatePropagation();
             openConfirm();
           } else if (e.key === 'Escape') {
             e.preventDefault();
-            closeWithoutSave();
+            e.stopImmediatePropagation();
+            cancelEdit();
           }
+        }, true);
+
+        input.addEventListener('blur', function() {
+          if (closed || confirmOpen) return;
+          setTimeout(function() {
+            if (!closed && !confirmOpen) openConfirm();
+          }, 150);
         });
 
-        // Sekarang klik/blur juga memunculkan popup.
-        input.addEventListener('blur', () => {
-          if (finished || confirmationOpen) return;
-
-          blurTimer = setTimeout(() => {
-            if (!finished && !confirmationOpen) openConfirm();
-          }, 180);
-        });
-
-        // Klik dua kali pada Qty juga langsung membuka konfirmasi setelah nilai diedit.
-        input.addEventListener('dblclick', () => {
-          if (!finished && !confirmationOpen) openConfirm();
-        });
+        input.focus();
+        input.select();
       }
 
       function escapeHtml(value) {
