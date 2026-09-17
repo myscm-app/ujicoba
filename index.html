@@ -859,7 +859,264 @@
         padding:20px;
       }
 
-    </style>
+    
+      /* ==========================================================
+         STOCK WARNING MODAL — FINAL
+         Hidden by default; shown only with .is-open.
+         ========================================================== */
+      #stockWarningModal.wms-stock-warning-overlay {
+        position:fixed !important;
+        inset:0 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:20px !important;
+        background:rgba(15,23,42,.58) !important;
+        z-index:2147483002 !important;
+        opacity:0 !important;
+        visibility:hidden !important;
+        pointer-events:none !important;
+        overflow:auto !important;
+      }
+
+      #stockWarningModal.wms-stock-warning-overlay[hidden] {
+        display:none !important;
+      }
+
+      #stockWarningModal.wms-stock-warning-overlay.is-open {
+        display:flex !important;
+        opacity:1 !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+      }
+
+      #stockWarningModal .wms-stock-warning-box {
+        width:min(420px,94vw);
+        max-height:min(84vh,620px);
+        background:#fff;
+        border:1px solid #dbe4ef;
+        border-radius:14px;
+        box-shadow:0 22px 64px rgba(15,23,42,.28);
+        overflow:hidden;
+        transform:translateY(8px) scale(.985);
+        transition:transform .16s ease;
+      }
+
+      #stockWarningModal.is-open .wms-stock-warning-box {
+        transform:translateY(0) scale(1);
+      }
+
+      #stockWarningModal .wms-stock-warning-head {
+        min-height:60px;
+        padding:13px 16px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        background:#f8fafc;
+        border-bottom:1px solid #e7edf4;
+      }
+
+      #stockWarningModal .wms-stock-warning-title {
+        display:flex;
+        align-items:center;
+        gap:11px;
+        min-width:0;
+      }
+
+      #stockWarningModal .wms-stock-warning-icon {
+        width:34px;
+        height:34px;
+        flex:0 0 34px;
+        display:grid;
+        place-items:center;
+        border-radius:10px;
+        background:#fff7ed;
+        color:#f59e0b;
+        border:1px solid #fed7aa;
+        font-size:15px;
+      }
+
+      #stockWarningModal .wms-stock-warning-heading {
+        color:#0f172a;
+        font-size:14px;
+        font-weight:800;
+        line-height:1.2;
+      }
+
+      #stockWarningModal .wms-stock-warning-subtitle {
+        margin-top:3px;
+        color:#64748b;
+        font-size:10px;
+        line-height:1.4;
+      }
+
+      #stockWarningModal .wms-stock-warning-close {
+        width:28px;
+        height:28px;
+        flex:0 0 28px;
+        border:0;
+        border-radius:8px;
+        background:transparent;
+        color:#64748b;
+        font-size:21px;
+        line-height:1;
+        cursor:pointer;
+      }
+
+      #stockWarningModal .wms-stock-warning-close:hover {
+        background:#eef2f7;
+        color:#0f172a;
+      }
+
+      #stockWarningModal .wms-stock-warning-body {
+        padding:18px;
+        color:#334155;
+        font-size:12px;
+        line-height:1.7;
+      }
+
+      #stockWarningModal .stock-summary {
+        padding:12px 13px;
+        border:1px solid #fde68a;
+        border-radius:10px;
+        background:#fffbeb;
+        color:#92400e;
+      }
+
+      #stockWarningModal .wms-stock-warning-actions {
+        display:flex;
+        justify-content:flex-end;
+        padding:0 18px 16px;
+      }
+
+      #stockWarningModal .wms-stock-warning-ok {
+        min-width:78px;
+        height:38px;
+        padding:0 16px;
+        border-radius:8px;
+        border:1px solid #2563eb;
+        background:#2563eb;
+        color:#fff;
+        font-size:12px;
+        font-weight:800;
+        cursor:pointer;
+        box-shadow:0 5px 14px rgba(37,99,235,.18);
+      }
+
+      #stockWarningModal .wms-stock-warning-ok:hover {
+        background:#1d4ed8;
+        border-color:#1d4ed8;
+      }
+
+
+      /* FINAL GLOBAL ALERT MODAL */
+      #wmsAlertModal.wms-alert-overlay {
+        position:fixed !important;
+        inset:0 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:20px !important;
+        box-sizing:border-box !important;
+        background:rgba(15,23,42,.58) !important;
+        z-index:2147483647 !important;
+        opacity:0 !important;
+        visibility:hidden !important;
+        pointer-events:none !important;
+        overflow:auto !important;
+      }
+      #wmsAlertModal.wms-alert-overlay.is-open {
+        opacity:1 !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+      }
+      #wmsAlertModal .wms-alert-box {
+        width:min(430px,94vw);
+        background:#fff;
+        border:1px solid #dbe4ef;
+        border-radius:14px;
+        box-shadow:0 20px 55px rgba(15,23,42,.27);
+        overflow:hidden;
+      }
+      #wmsAlertModal .wms-alert-head {
+        min-height:56px;
+        padding:14px 18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        background:#f8fafc;
+        border-bottom:1px solid #e7edf4;
+      }
+      #wmsAlertModal .wms-alert-title-wrap {
+        display:flex;
+        align-items:center;
+        gap:11px;
+        min-width:0;
+      }
+      #wmsAlertModal .wms-alert-icon {
+        width:34px;
+        height:34px;
+        flex:0 0 34px;
+        display:grid;
+        place-items:center;
+        border-radius:10px;
+        background:#eff6ff;
+        color:#2563eb;
+        border:1px solid #bfdbfe;
+      }
+      #wmsAlertModal .wms-alert-title {
+        color:#0f172a;
+        font-size:15px;
+        font-weight:800;
+        line-height:1.2;
+      }
+      #wmsAlertModal .wms-alert-subtitle {
+        margin-top:3px;
+        color:#64748b;
+        font-size:10px;
+      }
+      #wmsAlertModal .wms-alert-close {
+        width:28px;
+        height:28px;
+        border:0;
+        border-radius:8px;
+        background:transparent;
+        color:#64748b;
+        font-size:21px;
+        cursor:pointer;
+      }
+      #wmsAlertModal .wms-alert-close:hover { background:#eef2f7; color:#0f172a; }
+      #wmsAlertModal .wms-alert-body {
+        padding:18px;
+        color:#334155;
+        font-size:12px;
+        line-height:1.7;
+      }
+      #wmsAlertModal .wms-alert-actions {
+        display:flex;
+        justify-content:flex-end;
+        padding:0 18px 16px;
+      }
+      #wmsAlertModal .wms-alert-ok {
+        min-width:78px;
+        height:38px;
+        padding:0 16px;
+        border-radius:8px;
+        border:1px solid #2563eb;
+        background:#2563eb;
+        color:#fff;
+        font-size:12px;
+        font-weight:800;
+        cursor:pointer;
+      }
+      #wmsAlertModal .wms-alert-ok:hover {
+        background:#1d4ed8;
+        border-color:#1d4ed8;
+      }
+
+</style>
   </head>
   <body>
     <!-- Loading overlay intentionally disabled for faster startup. -->
@@ -870,7 +1127,7 @@
     <!-- Restored custom WMS confirmation dialog -->
     
     <!-- Professional stock warning popup -->
-    <div id="stockWarningModal" class="wms-stock-warning-overlay" aria-hidden="true" hidden role="alertdialog" aria-modal="true">
+    <div id="stockWarningModal" class="wms-stock-warning-overlay" aria-hidden="true" hidden role="alertdialog" aria-modal="true" style="display:none !important;">
       <div class="wms-stock-warning-box">
         <div class="wms-stock-warning-head">
           <div class="wms-stock-warning-title">
@@ -1427,35 +1684,41 @@
       // Daily wisdom request disabled to keep WMS startup lean and responsive.
 
       function showAlert(title, message) {
-        const oldToast = document.getElementById('wms-clean-toast');
-        if (oldToast) oldToast.remove();
+        let overlay = document.getElementById('wmsAlertModal');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'wmsAlertModal';
+          overlay.className = 'wms-alert-overlay';
+          overlay.setAttribute('role', 'alertdialog');
+          overlay.setAttribute('aria-modal', 'true');
+          overlay.setAttribute('aria-hidden', 'true');
+          overlay.innerHTML = `
+            <div class="wms-alert-box">
+              <div class="wms-alert-head">
+                <div class="wms-alert-title-wrap">
+                  <span class="wms-alert-icon"><i class="fas fa-circle-info"></i></span>
+                  <div>
+                    <div id="wmsAlertTitle" class="wms-alert-title"></div>
+                    <div class="wms-alert-subtitle">Periksa informasi berikut sebelum melanjutkan.</div>
+                  </div>
+                </div>
+                <button type="button" id="wmsAlertClose" class="wms-alert-close" aria-label="Tutup">×</button>
+              </div>
+              <div id="wmsAlertBody" class="wms-alert-body"></div>
+              <div class="wms-alert-actions">
+                <button type="button" id="wmsAlertOk" class="wms-alert-ok">OK</button>
+              </div>
+            </div>`;
+          document.body.appendChild(overlay);
+        }
 
-        const toast = document.createElement('div');
-        toast.id = 'wms-clean-toast';
-        toast.style.cssText = [
-          'position:fixed','right:22px','bottom:22px','z-index:2147483000',
-          'background:#0f172a','color:#fff','padding:12px 16px','border-radius:10px',
-          'box-shadow:0 12px 30px rgba(15,23,42,.22)','font-size:12px','font-weight:700',
-          'max-width:360px'
-        ].join(';');
-        toast.innerHTML = `<div style="font-weight:800;margin-bottom:3px;">${escapeHtml(title || '')}</div>
-                           <div style="font-weight:500;opacity:.92;">${message || ''}</div>`;
-        document.body.appendChild(toast);
+        const titleEl = document.getElementById('wmsAlertTitle');
+        const bodyEl = document.getElementById('wmsAlertBody');
+        const okBtn = document.getElementById('wmsAlertOk');
+        const closeBtn = document.getElementById('wmsAlertClose');
 
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          toast.style.transition = 'opacity .2s ease';
-          setTimeout(() => toast.remove(), 220);
-        }, 3000);
-      }
-
-
-      function showStockWarning(message) {
-        const overlay = document.getElementById('stockWarningModal');
-        const body = document.getElementById('stockWarningMsg');
-        const ok = document.getElementById('stockWarningOk');
-        const close = document.getElementById('stockWarningClose');
-        if (!overlay || !body || !ok) return;
+        titleEl.textContent = title || 'Perhatian';
+        bodyEl.innerHTML = String(message || '');
 
         let closed = false;
         const closeDialog = () => {
@@ -1463,9 +1726,8 @@
           closed = true;
           overlay.classList.remove('is-open');
           overlay.setAttribute('aria-hidden', 'true');
-          overlay.hidden = true;
-          ok.onclick = null;
-          if (close) close.onclick = null;
+          okBtn.onclick = null;
+          closeBtn.onclick = null;
           overlay.onclick = null;
           document.removeEventListener('keydown', escHandler, true);
         };
@@ -1476,20 +1738,22 @@
           }
         };
 
-        body.innerHTML = `<div class="stock-summary">${String(message || '')}</div>`;
-        try { playUiSound('error'); } catch (_) {}
-        overlay.hidden = false;
         overlay.classList.add('is-open');
         overlay.setAttribute('aria-hidden', 'false');
-
-        ok.onclick = closeDialog;
-        if (close) close.onclick = closeDialog;
+        okBtn.onclick = closeDialog;
+        closeBtn.onclick = closeDialog;
         overlay.onclick = (e) => {
           if (e.target === overlay) closeDialog();
         };
         document.addEventListener('keydown', escHandler, true);
-        setTimeout(() => { if (!closed) ok.focus(); }, 30);
+        setTimeout(() => { if (!closed) okBtn.focus(); }, 30);
       }
+
+
+      function showStockWarning(message) {
+        showAlert('Stok Tidak Cukup', message);
+      }
+
 
       function showConfirm(message, callback) {
         const overlay = document.getElementById('custom-confirm');
