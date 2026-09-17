@@ -1116,6 +1116,19 @@
         border-color:#1d4ed8;
       }
 
+
+      /* FINAL READ-ONLY RULE: Stock On Hand can never enter edit mode */
+      #stockTransactionMatrix td.matrix-qty.matrix-readonly {
+        cursor:default !important;
+        background:#f8fafc !important;
+        color:#475569 !important;
+        font-weight:600;
+      }
+      #stockTransactionMatrix td.matrix-qty.matrix-readonly:hover {
+        outline:none !important;
+        box-shadow:none !important;
+        background:#f8fafc !important;
+      }
 </style>
   </head>
   <body>
@@ -2272,7 +2285,7 @@
                 rowTotal += value;
                 grandDayTotals[date] += value;
                 const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
-                html += `<td class="matrix-qty ${isMatrixReadOnlyTransaction(row) ? "matrix-readonly" : ""} ${cls}" data-row="${originalIndex}" data-date="${date}" data-readonly="${isMatrixReadOnlyTransaction(row) ? "true" : "false"}" title="Klik untuk revisi Qty">${formatMatrixQty(value)}</td>`;
+                html += `<td class="matrix-qty ${isMatrixReadOnlyTransaction(row) ? "matrix-readonly" : ""} ${cls}" data-row="${originalIndex}" data-date="${date}" data-readonly="${isMatrixReadOnlyTransaction(row) ? "true" : "false"}" title="${isMatrixReadOnlyTransaction(row) ? "Stock On Hand — hanya dapat dilihat" : "Klik untuk revisi Qty"}">${formatMatrixQty(value)}</td>`;
               });
 
               html += `<td style="text-align:right;font-weight:800;">${formatMatrixQty(rowTotal)}</td></tr>`;
@@ -2306,7 +2319,33 @@
       // Tidak bergantung pada handler per-cell sehingga popup tetap muncul
       // walaupun matrix dirender ulang atau ada event handler lain.
       // ================================================================
-      const matrixQtyEditor = {
+function matrixCellIsReadOnly(cell) {
+        if (!cell) return true;
+        if (cell.dataset.readonly === 'true' || cell.classList.contains('matrix-readonly')) return true;
+
+        const ri = Number(cell.dataset.row);
+        const row = Number.isFinite(ri) && typeof stockTransactionMatrixData !== 'undefined'
+          ? stockTransactionMatrixData.rows?.[ri]
+          : null;
+
+        if (row && typeof isMatrixReadOnlyTransaction === 'function' &&
+            isMatrixReadOnlyTransaction(row)) return true;
+
+        const rowEl = cell.closest('tr');
+        const label = String(
+          rowEl?.querySelector('.matrix-trans-label, .matrix-transaction, .sticky-type, td:nth-child(3)')?.textContent || ''
+        ).trim().toLowerCase().replace(/[_-]+/g, ' ');
+
+        return (
+          label === 'stock on hand' ||
+          label === 'stok on hand' ||
+          label === 'on hand' ||
+          label.includes('stock on hand') ||
+          label.includes('stok on hand')
+        );
+      }
+
+            const matrixQtyEditor = {
         cell: null,
         input: null,
         rowIndex: null,
@@ -2322,6 +2361,16 @@
 
         open(cell) {
           if (!cell || this.busy || cell.classList.contains('editing')) return;
+
+          // STOCK ON HAND = READ ONLY.
+          // Never create an input and never open the Qty confirmation for it.
+          if (matrixCellIsReadOnly(cell)) {
+            cell.classList.add('matrix-readonly');
+            cell.dataset.readonly = 'true';
+            cell.setAttribute('aria-readonly', 'true');
+            cell.title = 'Stock On Hand — hanya dapat dilihat';
+            return;
+          }
 
           const ri = Number(cell.dataset.row);
           const date = cell.dataset.date;
@@ -2568,6 +2617,15 @@
         // Qty Matrix = mulai edit.
         const cell = event.target.closest('#stockTransactionMatrix td.matrix-qty');
         if (cell && !event.target.closest('#matrixQtyConfirm')) {
+          if (matrixCellIsReadOnly(cell)) {
+            event.preventDefault();
+            event.stopPropagation();
+            cell.classList.add('matrix-readonly');
+            cell.dataset.readonly = 'true';
+            cell.setAttribute('aria-readonly', 'true');
+            cell.title = 'Stock On Hand — hanya dapat dilihat';
+            return;
+          }
           event.preventDefault();
           event.stopPropagation();
           matrixQtyEditor.open(cell);
