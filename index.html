@@ -868,7 +868,28 @@
         <!-- Dedicated confirmation for Matrix Qty revision -->
     
     <!-- Restored custom WMS confirmation dialog -->
-    <div id="custom-confirm" class="wms-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true">
+    
+    <!-- Professional stock warning popup -->
+    <div id="stockWarningModal" class="wms-stock-warning-overlay" aria-hidden="true" hidden role="alertdialog" aria-modal="true">
+      <div class="wms-stock-warning-box">
+        <div class="wms-stock-warning-head">
+          <div class="wms-stock-warning-title">
+            <span class="wms-stock-warning-icon"><i class="fas fa-triangle-exclamation"></i></span>
+            <div>
+              <div class="wms-stock-warning-heading">Stok Tidak Cukup</div>
+              <div class="wms-stock-warning-subtitle">Transaksi melebihi stok On-Hand yang tersedia.</div>
+            </div>
+          </div>
+          <button type="button" id="stockWarningClose" class="wms-stock-warning-close" aria-label="Tutup">×</button>
+        </div>
+        <div id="stockWarningMsg" class="wms-stock-warning-body"></div>
+        <div class="wms-stock-warning-actions">
+          <button type="button" id="stockWarningOk" class="wms-stock-warning-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+<div id="custom-confirm" class="wms-confirm-overlay" aria-hidden="true" role="dialog" aria-modal="true">
       <div class="wms-confirm-box" role="document">
         <div class="wms-confirm-head">
           <div class="wms-confirm-title">
@@ -1426,6 +1447,48 @@
           toast.style.transition = 'opacity .2s ease';
           setTimeout(() => toast.remove(), 220);
         }, 3000);
+      }
+
+
+      function showStockWarning(message) {
+        const overlay = document.getElementById('stockWarningModal');
+        const body = document.getElementById('stockWarningMsg');
+        const ok = document.getElementById('stockWarningOk');
+        const close = document.getElementById('stockWarningClose');
+        if (!overlay || !body || !ok) return;
+
+        let closed = false;
+        const closeDialog = () => {
+          if (closed) return;
+          closed = true;
+          overlay.classList.remove('is-open');
+          overlay.setAttribute('aria-hidden', 'true');
+          overlay.hidden = true;
+          ok.onclick = null;
+          if (close) close.onclick = null;
+          overlay.onclick = null;
+          document.removeEventListener('keydown', escHandler, true);
+        };
+        const escHandler = (e) => {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDialog();
+          }
+        };
+
+        body.innerHTML = `<div class="stock-summary">${String(message || '')}</div>`;
+        try { playUiSound('error'); } catch (_) {}
+        overlay.hidden = false;
+        overlay.classList.add('is-open');
+        overlay.setAttribute('aria-hidden', 'false');
+
+        ok.onclick = closeDialog;
+        if (close) close.onclick = closeDialog;
+        overlay.onclick = (e) => {
+          if (e.target === overlay) closeDialog();
+        };
+        document.addEventListener('keydown', escHandler, true);
+        setTimeout(() => { if (!closed) ok.focus(); }, 30);
       }
 
       function showConfirm(message, callback) {
@@ -2517,7 +2580,7 @@
           const totalRequested = parsedQty + qtyInCart;
 
           if (currentStock <= 0 || totalRequested > currentStock) {
-            showAlert("Stok Tidak Cukup!", `Stok On-Hand saat ini: ${currentStock} Zak.<br>Total diminta (+ yang di keranjang): ${totalRequested} Zak.<br><b>Tidak boleh ada stok on-hand negatif!</b>`);
+            showStockWarning(`Stok On-Hand saat ini: <b>${currentStock} Zak</b>.<br>Total diminta (+ yang di keranjang): <b>${totalRequested} Zak</b>.<br><b>Tidak boleh ada stok on-hand negatif.</b>`);
             return; 
           }
         }
