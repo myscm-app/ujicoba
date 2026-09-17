@@ -1752,7 +1752,8 @@
 
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
-        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec'; 
+        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec';
+      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbw_FtqVbE6CM9QYZ_z-0bjaRAh93iMxLNQlKoZG2PO89R4UaBEpdEqQ9SNPOMuiV6V_Ig/exec'; 
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
@@ -2137,6 +2138,36 @@
         }
       }
 
+      async function masterDataApiCall(action, payload = null, method = 'POST') {
+        const url = `${MASTERDATA_URL}?action=${encodeURIComponent(action)}`;
+
+        const options = {
+          method,
+          mode: 'cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+        };
+
+        if (method === 'POST') {
+          options.body = JSON.stringify(
+            Object.assign({}, payload || {}, { action })
+          );
+        }
+
+        const response = await fetch(url, options);
+
+        if (!response.ok) {
+          throw new Error(`MasterData API HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data === null || data === undefined) {
+          throw new Error('Respons MasterData kosong.');
+        }
+
+        return data;
+      }
+
       window.onload = async function() {
         showLoading(true);
 
@@ -2220,6 +2251,7 @@
       function normalizeMasterDataRecord(m) {
         if (!m) return null;
         return {
+          rowNumber: m.rowNumber ?? m.row ?? null,
           segment: m.segment ?? m.Segment ?? m[0] ?? '',
           sku: m.sku ?? m.SKU ?? m.itemCode ?? m['Item Code'] ?? m[1] ?? '',
           desc: m.desc ?? m.description ?? m.Description ?? m[2] ?? '',
@@ -2229,11 +2261,18 @@
         };
       }
 
-      async function loadMasterData() { 
-          const d = await apiCall('getMasterData');
-          if(d && Array.isArray(d)) {
-              masterData = d.map(normalizeMasterDataRecord).filter(Boolean);
-          }
+      async function loadMasterData() {
+        try {
+          const d = await masterDataApiCall('getMasterData', null, 'GET');
+          const list = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : null);
+          if (!list) throw new Error(d?.message || 'Format MasterData tidak valid.');
+          masterData = list.map(normalizeMasterDataRecord).filter(Boolean);
+        } catch (error) {
+          console.error('Gagal memuat MasterData:', error);
+          masterData = [];
+          showAlert('Master Data Tidak Terhubung',
+            'Backend Master Data belum dapat diakses. Pastikan Web App sudah di-deploy dan aksesnya <b>Anyone</b>.');
+        }
       }
       
 
@@ -3516,9 +3555,11 @@ function matrixCellIsReadOnly(cell) {
            Weight per Zak: ${weight.toLocaleString('id-ID')} kg`,
           async () => {
             showLoading(true);
-            const res = await apiCall('updateMasterData', {
+            const res = await masterDataApiCall('updateMasterData', {
               sheetName: 'MasterData',
               token: MASTER_EDIT_TOKEN,
+              originalSku: masterData[index]?.sku || '',
+              rowNumber: masterData[index]?.rowNumber || '',
               rowIndex: index,
               segment: segment,
               sku: sku,
@@ -3528,7 +3569,7 @@ function matrixCellIsReadOnly(cell) {
               weight: weight,
               weightPerZak: weight,
               rowValues: [segment, sku, desc, uom, weight]
-            });
+            }, 'POST');
             showLoading(false);
 
             if (res && res.status === 'success') {
@@ -3595,7 +3636,7 @@ function matrixCellIsReadOnly(cell) {
             // Exact MasterData column mapping:
             // A = Segment, B = SKU / Item Code, C = Description,
             // D = UOM, E = Weight per Zak. F:J stay untouched/blank.
-            const res = await apiCall('addMasterData', {
+            const res = await masterDataApiCall('addMasterData', {
               sheetName: 'MasterData',
               segment: segment,        // Column A
               sku: sku,                // Column B
@@ -3608,7 +3649,7 @@ function matrixCellIsReadOnly(cell) {
               // Explicit row payload for Apps Script handlers that accept row values.
               columns: ['A','B','C','D','E'],
               rowValues: [segment, sku, desc, uom, weight]
-            });
+            }, 'POST');
 
             showLoading(false);
 
@@ -4147,7 +4188,7 @@ async function localAiReasoning(userText) {
                     {sku:'121-701-0007', segment:'Retail', desc:'DRV MRTR D-1 PRKT BATA RINGAN-40KG-RTL'}
                   ]);
                   else if(action === 'getTodayRecords') resolve([]);
-                  else if(action === 'submitData' || action === 'updateProductParams' || action === 'addMasterData') resolve({status:'success'});
+                  else if(action === 'submitData' || action === 'updateProductParams') resolve({status:'success'});
                    else if(action === 'aiChat') resolve({status:'error', message:'AI server action belum dikonfigurasi'});
                   else if(action.includes('getReportData')) resolve({summary: [{segment:'Retail', sku:'121-701-0007', desc:'DRV MRTR D-1 PRKT BATA RINGAN-40KG-RTL', qty:1000, maxAge:5, status:'Aman'}]});
                   else if(action.includes('getFifoRecommendation')) resolve({bin:'FG-A', lot:'123', qty:1000});
