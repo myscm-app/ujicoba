@@ -1129,6 +1129,215 @@
         box-shadow:none !important;
         background:#f8fafc !important;
       }
+
+      /* ==========================================================
+         MASTER DATA — PROFESSIONAL PREVIEW
+         ========================================================== */
+      #masterPreviewCard {
+        overflow:hidden;
+      }
+      #masterPreviewCard .table-wrapper {
+        border:1px solid #e2e8f0;
+        border-radius:12px;
+        background:#fff;
+        overflow:auto;
+      }
+      #masterPreviewTable {
+        width:100%;
+        min-width:920px;
+        border-collapse:separate;
+        border-spacing:0;
+        font-size:11px;
+      }
+      #masterPreviewTable thead th {
+        padding:11px 12px;
+        background:#f8fafc;
+        color:#334155;
+        font-size:10px;
+        font-weight:800;
+        text-align:left;
+        border-bottom:1px solid #dbe4ef;
+        white-space:nowrap;
+      }
+      #masterPreviewTable tbody td {
+        padding:10px 12px;
+        color:#334155;
+        background:#fff;
+        border-bottom:1px solid #edf2f7;
+        vertical-align:middle;
+      }
+      #masterPreviewTable tbody tr:last-child td {
+        border-bottom:0;
+      }
+      #masterPreviewTable tbody tr:hover td {
+        background:#f8fbff;
+      }
+      #masterPreviewTable th:first-child,
+      #masterPreviewTable td:first-child {
+        width:46px;
+        text-align:center;
+        color:#94a3b8;
+        font-weight:700;
+      }
+      #masterPreviewTable .md-segment {
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:0 8px;
+        border-radius:999px;
+        background:#eff6ff;
+        border:1px solid #bfdbfe;
+        color:#1d4ed8;
+        font-size:9px;
+        font-weight:800;
+      }
+      #masterPreviewTable .md-sku {
+        color:#0f172a;
+        font-weight:800;
+        white-space:nowrap;
+      }
+      #masterPreviewTable .md-uom {
+        display:inline-flex;
+        min-width:34px;
+        justify-content:center;
+        padding:4px 7px;
+        border-radius:6px;
+        background:#f1f5f9;
+        border:1px solid #e2e8f0;
+        color:#475569;
+        font-size:9px;
+        font-weight:800;
+      }
+      #masterPreviewTable .md-weight {
+        text-align:right;
+        white-space:nowrap;
+        font-variant-numeric:tabular-nums;
+        font-weight:700;
+      }
+      #masterPreviewTable .md-actions {
+        display:flex;
+        justify-content:flex-end;
+        gap:6px;
+      }
+      .md-action-btn {
+        width:30px;
+        height:30px;
+        display:inline-grid;
+        place-items:center;
+        padding:0;
+        border-radius:8px;
+        cursor:pointer;
+        font-size:11px;
+      }
+      .md-edit-btn {
+        color:#2563eb;
+        background:#eff6ff;
+        border:1px solid #bfdbfe;
+      }
+      .md-edit-btn:hover {
+        background:#dbeafe;
+      }
+      .md-empty {
+        padding:34px 20px !important;
+        text-align:center !important;
+        color:#94a3b8 !important;
+      }
+
+      /* Token gate for Master Data editing */
+      #masterEditModal {
+        position:fixed !important;
+        inset:0 !important;
+        display:flex !important;
+        align-items:center !important;
+        justify-content:center !important;
+        padding:20px !important;
+        box-sizing:border-box;
+        background:rgba(15,23,42,.58) !important;
+        z-index:2147483646 !important;
+        opacity:0 !important;
+        visibility:hidden !important;
+        pointer-events:none !important;
+      }
+      #masterEditModal.is-open {
+        opacity:1 !important;
+        visibility:visible !important;
+        pointer-events:auto !important;
+      }
+      .master-edit-box {
+        width:min(420px,94vw);
+        background:#fff;
+        border:1px solid #dbe4ef;
+        border-radius:14px;
+        box-shadow:0 20px 58px rgba(15,23,42,.28);
+        overflow:hidden;
+      }
+      .master-edit-head {
+        min-height:56px;
+        padding:14px 18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        background:#f8fafc;
+        border-bottom:1px solid #e7edf4;
+      }
+      .master-edit-title {
+        color:#0f172a;
+        font-size:14px;
+        font-weight:800;
+      }
+      .master-edit-subtitle {
+        margin-top:3px;
+        color:#64748b;
+        font-size:10px;
+      }
+      .master-edit-body {
+        padding:18px;
+      }
+      .master-edit-token {
+        width:100%;
+        height:40px;
+        box-sizing:border-box;
+        border:1px solid #cbd5e1;
+        border-radius:8px;
+        padding:0 12px;
+        font-size:13px;
+        color:#0f172a;
+        outline:none;
+      }
+      .master-edit-token:focus {
+        border-color:#2563eb;
+        box-shadow:0 0 0 3px rgba(37,99,235,.12);
+      }
+      .master-edit-actions {
+        display:flex;
+        justify-content:flex-end;
+        gap:8px;
+        padding:0 18px 18px;
+      }
+      .master-edit-actions button {
+        min-width:82px;
+        height:38px;
+        border-radius:8px;
+        padding:0 16px;
+        font-size:12px;
+        font-weight:800;
+        cursor:pointer;
+      }
+      .master-edit-cancel {
+        border:1px solid #dbe3ec;
+        background:#f1f5f9;
+        color:#334155;
+      }
+      .master-edit-ok {
+        border:1px solid #2563eb;
+        background:#2563eb;
+        color:#fff;
+      }
+      .master-edit-ok:hover {
+        background:#1d4ed8;
+      }
+
 </style>
   </head>
   <body>
@@ -1155,6 +1364,29 @@
         <div id="stockWarningMsg" class="wms-stock-warning-body"></div>
         <div class="wms-stock-warning-actions">
           <button type="button" id="stockWarningOk" class="wms-stock-warning-ok">OK</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div id="masterEditModal" aria-hidden="true" role="dialog" aria-modal="true">
+      <div class="master-edit-box">
+        <div class="master-edit-head">
+          <div>
+            <div class="master-edit-title">Verifikasi Edit Master Data</div>
+            <div class="master-edit-subtitle">Masukkan token untuk membuka mode edit.</div>
+          </div>
+          <button type="button" id="masterEditClose" class="wms-confirm-close" aria-label="Tutup">×</button>
+        </div>
+        <div class="master-edit-body">
+          <input id="masterEditToken" class="master-edit-token"
+                 type="password" inputmode="numeric" autocomplete="off"
+                 placeholder="Masukkan token">
+          <div style="margin-top:8px;font-size:10px;color:#94a3b8;">Akses edit menggunakan token otorisasi.</div>
+        </div>
+        <div class="master-edit-actions">
+          <button type="button" id="masterEditCancel" class="master-edit-cancel">Batal</button>
+          <button type="button" id="masterEditOk" class="master-edit-ok">Lanjut</button>
         </div>
       </div>
     </div>
@@ -1464,10 +1696,12 @@
             </div>
           </div>
 
-          <div class="required-note"><span class="required-mark">*</span> Wajib diisi</div>
+          <div class="required-note">
+            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:E</b> pada sheet <b>MasterData</b>.
+          </div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <button onclick="addMasterItem()" class="btn-primary" style="width:auto; padding:12px 22px;">
+            <button data-master-save onclick="addMasterItem()" class="btn-primary" style="width:auto; padding:12px 22px;">
               <i class="fas fa-plus"></i> Tambah ke Master Data
             </button>
             <button onclick="resetMasterForm()" class="btn-add" style="width:auto; padding:12px 22px; background:#64748b;">
@@ -1476,18 +1710,31 @@
           </div>
         </div>
 
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap;">
-            <h3 style="margin:0;">Preview Master Data</h3>
-            <span id="masterCount" style="font-size:12px; color:var(--text-muted);">0 SKU</span>
+        <div class="card" id="masterPreviewCard">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
+            <div>
+              <h3 style="margin:0;">Preview Master Data</h3>
+              <div style="font-size:10px;color:#64748b;margin-top:3px;">
+                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · Edit dilindungi Token
+              </div>
+            </div>
+            <span id="masterCount" style="font-size:11px;font-weight:800;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:5px 9px;border-radius:999px;">0 SKU</span>
           </div>
           <div class="table-wrapper">
             <table id="masterPreviewTable">
               <thead>
-                <tr><th>No</th><th>Segment</th><th>SKU / Item Code</th><th>Description</th><th>UOM</th><th>Weight / Zak (kg)</th></tr>
+                <tr>
+                  <th>No</th>
+                  <th>Segment</th>
+                  <th>SKU / Item Code</th>
+                  <th>Description</th>
+                  <th>UOM</th>
+                  <th>Weight / Zak (kg)</th>
+                  <th style="text-align:right;">Aksi</th>
+                </tr>
               </thead>
               <tbody>
-                <tr><td colspan="6" style="text-align:center; color:#999; padding:20px;">Belum ada data</td></tr>
+                <tr><td colspan="7" class="md-empty">Belum ada data</td></tr>
               </tbody>
             </table>
           </div>
@@ -1970,10 +2217,22 @@
         }
       }
 
+      function normalizeMasterDataRecord(m) {
+        if (!m) return null;
+        return {
+          segment: m.segment ?? m.Segment ?? m[0] ?? '',
+          sku: m.sku ?? m.SKU ?? m.itemCode ?? m['Item Code'] ?? m[1] ?? '',
+          desc: m.desc ?? m.description ?? m.Description ?? m[2] ?? '',
+          description: m.description ?? m.desc ?? m.Description ?? m[2] ?? '',
+          uom: m.uom ?? m.UOM ?? m[3] ?? '',
+          weight: m.weight ?? m.weightPerZak ?? m['Weight per Zak'] ?? m[4] ?? ''
+        };
+      }
+
       async function loadMasterData() { 
           const d = await apiCall('getMasterData');
           if(d && Array.isArray(d)) {
-              masterData = d;
+              masterData = d.map(normalizeMasterDataRecord).filter(Boolean);
           }
       }
       
@@ -3138,24 +3397,168 @@ function matrixCellIsReadOnly(cell) {
         countEl.innerText = `${masterData.length.toLocaleString('id-ID')} SKU`;
 
         if (!masterData.length) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999; padding:20px;">Belum ada data</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="md-empty">Belum ada data</td></tr>';
           return;
         }
 
-        const preview = masterData.slice().sort((a,b) => String(a.sku || '').localeCompare(String(b.sku || '')));
-        tbody.innerHTML = preview.map((m, i) =>
-          `<tr>
+        const preview = masterData
+          .map((m, originalIndex) => ({ ...m, __index: originalIndex }))
+          .sort((a,b) => String(a.sku || '').localeCompare(String(b.sku || '')));
+
+        tbody.innerHTML = preview.map((m, i) => `
+          <tr data-master-index="${m.__index}">
             <td>${i + 1}</td>
-            <td>${m.segment || '-'}</td>
-            <td>${m.sku || '-'}</td>
-            <td>${m.desc || m.description || '-'}</td>
-            <td>${m.uom || m.UOM || '-'}</td>
-            <td>${m.weight ?? m.weightPerZak ?? m.weight_per_zak ?? '-'}</td>
-          </tr>`
-        ).join('');
+            <td><span class="md-segment">${escapeHtml(m.segment || '-')}</span></td>
+            <td><span class="md-sku">${escapeHtml(m.sku || '-')}</span></td>
+            <td>${escapeHtml(m.desc || m.description || '-')}</td>
+            <td><span class="md-uom">${escapeHtml(m.uom || m.UOM || '-')}</span></td>
+            <td class="md-weight">${m.weight !== '' && m.weight != null ? Number(m.weight).toLocaleString('id-ID') : '-'}</td>
+            <td>
+              <div class="md-actions">
+                <button type="button" class="md-action-btn md-edit-btn"
+                        data-action="edit-master" data-index="${m.__index}"
+                        title="Edit Master Data">
+                  <i class="fas fa-pen"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
       }
 
-      async function addMasterItem() {
+
+
+      const MASTER_EDIT_TOKEN = '0';
+      let masterEditIndex = null;
+
+      function closeMasterEditModal() {
+        const modal = document.getElementById('masterEditModal');
+        const token = document.getElementById('masterEditToken');
+        if (modal) {
+          modal.classList.remove('is-open');
+          modal.setAttribute('aria-hidden', 'true');
+        }
+        if (token) token.value = '';
+        masterEditIndex = null;
+      }
+
+      function openMasterEdit(index) {
+        const item = masterData[index];
+        const modal = document.getElementById('masterEditModal');
+        const token = document.getElementById('masterEditToken');
+        if (!item || !modal || !token) return;
+
+        masterEditIndex = index;
+        modal.classList.add('is-open');
+        modal.setAttribute('aria-hidden', 'false');
+        setTimeout(() => token.focus(), 30);
+      }
+
+      function authorizeMasterEdit() {
+        const tokenEl = document.getElementById('masterEditToken');
+        if (!tokenEl || masterEditIndex === null) return;
+
+        if (String(tokenEl.value).trim() !== MASTER_EDIT_TOKEN) {
+          playUiSound('error');
+          showAlert('Token Tidak Valid', 'Token edit Master Data tidak sesuai.');
+          tokenEl.select();
+          return;
+        }
+
+        const item = masterData[masterEditIndex];
+        const index = masterEditIndex;
+        closeMasterEditModal();
+
+        document.getElementById('masterSku').value = item.sku || '';
+        document.getElementById('masterDesc').value = item.desc || item.description || '';
+        document.getElementById('masterSegment').value = item.segment || '';
+        document.getElementById('masterUom').value = item.uom || item.UOM || '';
+        document.getElementById('masterWeight').value = item.weight ?? item.weightPerZak ?? '';
+
+        const btn = document.querySelector('#page-master button[data-master-save]');
+        if (btn) {
+          btn.dataset.editIndex = String(index);
+          btn.innerHTML = '<i class="fas fa-floppy-disk"></i> Simpan Perubahan';
+          btn.setAttribute('data-master-editing', 'true');
+          btn.onclick = () => saveMasterEdit(index);
+        }
+        document.getElementById('masterSku')?.focus();
+        playUiSound('click');
+      }
+
+      async function saveMasterEdit(index) {
+        const sku = document.getElementById('masterSku').value.trim();
+        const desc = document.getElementById('masterDesc').value.trim();
+        const segment = document.getElementById('masterSegment').value.trim();
+        const uom = document.getElementById('masterUom').value.trim().toUpperCase();
+        const weight = Number(document.getElementById('masterWeight').value);
+
+        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0) {
+          showAlert('Data Belum Lengkap',
+            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, dan <b>Weight per Zak</b>.');
+          return;
+        }
+
+        const duplicate = masterData.some((m, i) =>
+          i !== index && String(m.sku || '').trim().toLowerCase() === sku.toLowerCase()
+        );
+        if (duplicate) {
+          showAlert('SKU Duplikat', `SKU <b>${escapeHtml(sku)}</b> sudah digunakan item lain.`);
+          return;
+        }
+
+        showConfirm(
+          `Simpan perubahan Master Data?<br><br>
+           <b>${escapeHtml(sku)}</b><br>
+           ${escapeHtml(desc)}<br>
+           Segment: ${escapeHtml(segment)}<br>
+           UOM: ${escapeHtml(uom)}<br>
+           Weight per Zak: ${weight.toLocaleString('id-ID')} kg`,
+          async () => {
+            showLoading(true);
+            const res = await apiCall('updateMasterData', {
+              sheetName: 'MasterData',
+              token: MASTER_EDIT_TOKEN,
+              rowIndex: index,
+              segment: segment,
+              sku: sku,
+              desc: desc,
+              description: desc,
+              uom: uom,
+              weight: weight,
+              weightPerZak: weight,
+              rowValues: [segment, sku, desc, uom, weight]
+            });
+            showLoading(false);
+
+            if (res && res.status === 'success') {
+              masterData[index] = {
+                ...masterData[index],
+                segment, sku, desc, description: desc, uom,
+                weight, weightPerZak: weight
+              };
+              renderMasterPreview();
+              restoreMasterAddMode();
+              showAlert('Berhasil', `Master Data <b>${escapeHtml(sku)}</b> berhasil diperbarui.`);
+              playUiSound('save');
+            } else {
+              showAlert('Gagal', res?.message || 'Gagal memperbarui Master Data.');
+            }
+          }
+        );
+      }
+
+      function restoreMasterAddMode() {
+        const btn = document.querySelector('#page-master button[data-master-save]');
+        if (!btn) return;
+        btn.removeAttribute('data-edit-index');
+        btn.removeAttribute('data-master-editing');
+        btn.innerHTML = '<i class="fas fa-plus"></i> Tambah ke Master Data';
+        btn.onclick = () => addMasterItem();
+        resetMasterForm();
+      }
+
+            async function addMasterItem() {
         const sku = document.getElementById('masterSku').value.trim();
         const desc = document.getElementById('masterDesc').value.trim();
         const segment = document.getElementById('masterSegment').value.trim();
@@ -3189,26 +3592,34 @@ function matrixCellIsReadOnly(cell) {
           async () => {
             showLoading(true);
 
+            // Exact MasterData column mapping:
+            // A = Segment, B = SKU / Item Code, C = Description,
+            // D = UOM, E = Weight per Zak. F:J stay untouched/blank.
             const res = await apiCall('addMasterData', {
-              sku: sku,
-              desc: desc,
-              description: desc,
-              segment: segment,
-              uom: uom,
-              weight: weight,
-              weightPerZak: weight
+              sheetName: 'MasterData',
+              segment: segment,        // Column A
+              sku: sku,                // Column B
+              desc: desc,              // Column C
+              description: desc,       // Column C (alias)
+              uom: uom,                // Column D
+              weight: weight,          // Column E
+              weightPerZak: weight,    // Column E (alias)
+
+              // Explicit row payload for Apps Script handlers that accept row values.
+              columns: ['A','B','C','D','E'],
+              rowValues: [segment, sku, desc, uom, weight]
             });
 
             showLoading(false);
 
             if (res && res.status === 'success') {
               masterData.push({
-                sku: sku,
-                desc: desc,
+                segment: segment,  // A
+                sku: sku,          // B
+                desc: desc,        // C
                 description: desc,
-                segment: segment,
-                uom: uom,
-                weight: weight,
+                uom: uom,          // D
+                weight: weight,    // E
                 weightPerZak: weight
               });
               renderMasterPreview();
@@ -3223,6 +3634,31 @@ function matrixCellIsReadOnly(cell) {
       }
 
 
+
+      /* MASTER EDIT EVENTS */
+      document.addEventListener('click', (event) => {
+        const btn = event.target.closest('[data-action="edit-master"]');
+        if (!btn) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openMasterEdit(Number(btn.dataset.index));
+      }, true);
+
+      document.getElementById('masterEditOk')?.addEventListener('click', authorizeMasterEdit);
+      document.getElementById('masterEditCancel')?.addEventListener('click', closeMasterEditModal);
+      document.getElementById('masterEditClose')?.addEventListener('click', closeMasterEditModal);
+      document.getElementById('masterEditModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'masterEditModal') closeMasterEditModal();
+      });
+      document.getElementById('masterEditToken')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          authorizeMasterEdit();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          closeMasterEditModal();
+        }
+      });
 
       /* ================================
          WMS AI COPILOT ENGINE
