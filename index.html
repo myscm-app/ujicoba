@@ -1338,6 +1338,47 @@
         background:#1d4ed8;
       }
 
+
+      #masterPreviewTable .md-status {
+        display:inline-flex;
+        align-items:center;
+        min-height:22px;
+        padding:0 8px;
+        border-radius:999px;
+        font-size:9px;
+        font-weight:800;
+        border:1px solid;
+      }
+      #masterPreviewTable .md-status.active {
+        color:#166534;
+        background:#f0fdf4;
+        border-color:#bbf7d0;
+      }
+      #masterPreviewTable .md-status.inactive {
+        color:#991b1b;
+        background:#fef2f2;
+        border-color:#fecaca;
+      }
+      .md-toggle-btn {
+        width:30px;
+        height:30px;
+        display:inline-grid;
+        place-items:center;
+        border-radius:8px;
+        border:1px solid;
+        cursor:pointer;
+        font-size:11px;
+      }
+      .md-toggle-on {
+        background:#fff7ed;
+        border-color:#fed7aa;
+        color:#ea580c;
+      }
+      .md-toggle-off {
+        background:#eff6ff;
+        border-color:#bfdbfe;
+        color:#2563eb;
+      }
 </style>
   </head>
   <body>
@@ -1680,6 +1721,13 @@
 
           <div class="form-row">
             <div>
+              <label>Status Produk <span class="required-mark">*</span></label>
+              <select id="masterStatus" required>
+                <option value="ACTIVE">Active — tampil di Transaksi</option>
+                <option value="INACTIVE">Inactive — tidak tampil di Transaksi</option>
+              </select>
+            </div>
+            <div>
               <label>UOM <span class="required-mark">*</span></label>
               <select id="masterUom" required>
                 <option value="">Pilih UOM</option>
@@ -1715,7 +1763,7 @@
             <div>
               <h3 style="margin:0;">Preview Master Data</h3>
               <div style="font-size:10px;color:#64748b;margin-top:3px;">
-                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · Edit dilindungi Token
+                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · Status dikelola terpisah · API v2
               </div>
             </div>
             <span id="masterCount" style="font-size:11px;font-weight:800;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:5px 9px;border-radius:999px;">0 SKU</span>
@@ -1730,11 +1778,12 @@
                   <th>Description</th>
                   <th>UOM</th>
                   <th>Weight / Zak (kg)</th>
+                  <th>Status</th>
                   <th style="text-align:right;">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="7" class="md-empty">Belum ada data</td></tr>
+                <tr><td colspan="8" class="md-empty">Belum ada data</td></tr>
               </tbody>
             </table>
           </div>
@@ -1753,7 +1802,7 @@
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
         const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec';
-      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbw_FtqVbE6CM9QYZ_z-0bjaRAh93iMxLNQlKoZG2PO89R4UaBEpdEqQ9SNPOMuiV6V_Ig/exec'; 
+      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbz6jBxJD8KDYbWJtvPBTvj7239TxKO2CU-kSOT8H_OGPNrg1griaWASeR1PuTcHggCgFA/exec'; 
 
       let masterData = [], transactionItems = [];
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
@@ -2252,6 +2301,7 @@
         if (!m) return null;
         return {
           rowNumber: m.rowNumber ?? m.row ?? null,
+          status: String(m.status ?? m.Status ?? 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
           segment: m.segment ?? m.Segment ?? m[0] ?? '',
           sku: m.sku ?? m.SKU ?? m.itemCode ?? m['Item Code'] ?? m[1] ?? '',
           desc: m.desc ?? m.description ?? m.Description ?? m[2] ?? '',
@@ -3024,6 +3074,7 @@ function matrixCellIsReadOnly(cell) {
                                transType.includes('adjustment negatif');
 
         let filtered = masterData.filter(m =>
+          m.status !== 'INACTIVE' &&
           m.segment && m.segment.trim().toLowerCase() === selectedSegment
         );
 
@@ -3425,6 +3476,7 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('masterSegment').value = '';
         document.getElementById('masterUom').value = '';
         document.getElementById('masterWeight').value = '';
+        if (document.getElementById('masterStatus')) document.getElementById('masterStatus').value = 'ACTIVE';
         document.getElementById('masterSku').focus();
       }
 
@@ -3452,12 +3504,18 @@ function matrixCellIsReadOnly(cell) {
             <td>${escapeHtml(m.desc || m.description || '-')}</td>
             <td><span class="md-uom">${escapeHtml(m.uom || m.UOM || '-')}</span></td>
             <td class="md-weight">${m.weight !== '' && m.weight != null ? Number(m.weight).toLocaleString('id-ID') : '-'}</td>
+            <td><span class="md-status ${m.status === 'INACTIVE' ? 'inactive' : 'active'}">${m.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE'}</span></td>
             <td>
               <div class="md-actions">
                 <button type="button" class="md-action-btn md-edit-btn"
                         data-action="edit-master" data-index="${m.__index}"
                         title="Edit Master Data">
                   <i class="fas fa-pen"></i>
+                </button>
+                <button type="button" class="md-toggle-btn ${m.status === 'INACTIVE' ? 'md-toggle-off' : 'md-toggle-on'}"
+                        data-action="toggle-master-status" data-index="${m.__index}"
+                        title="${m.status === 'INACTIVE' ? 'Aktifkan SKU' : 'Nonaktifkan SKU'}">
+                  <i class="fas ${m.status === 'INACTIVE' ? 'fa-toggle-off' : 'fa-toggle-on'}"></i>
                 </button>
               </div>
             </td>
@@ -3513,6 +3571,7 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('masterSegment').value = item.segment || '';
         document.getElementById('masterUom').value = item.uom || item.UOM || '';
         document.getElementById('masterWeight').value = item.weight ?? item.weightPerZak ?? '';
+        if (document.getElementById('masterStatus')) document.getElementById('masterStatus').value = item.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
         const btn = document.querySelector('#page-master button[data-master-save]');
         if (btn) {
@@ -3531,6 +3590,7 @@ function matrixCellIsReadOnly(cell) {
         const segment = document.getElementById('masterSegment').value.trim();
         const uom = document.getElementById('masterUom').value.trim().toUpperCase();
         const weight = Number(document.getElementById('masterWeight').value);
+        const status = document.getElementById('masterStatus')?.value || 'ACTIVE';
 
         if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0) {
           showAlert('Data Belum Lengkap',
@@ -3558,6 +3618,7 @@ function matrixCellIsReadOnly(cell) {
             const res = await masterDataApiCall('updateMasterData', {
               sheetName: 'MasterData',
               token: MASTER_EDIT_TOKEN,
+              status: status,
               originalSku: masterData[index]?.sku || '',
               rowNumber: masterData[index]?.rowNumber || '',
               rowIndex: index,
@@ -3575,6 +3636,7 @@ function matrixCellIsReadOnly(cell) {
             if (res && res.status === 'success') {
               masterData[index] = {
                 ...masterData[index],
+                status,
                 segment, sku, desc, description: desc, uom,
                 weight, weightPerZak: weight
               };
@@ -3599,7 +3661,49 @@ function matrixCellIsReadOnly(cell) {
         resetMasterForm();
       }
 
-            async function addMasterItem() {
+            async function toggleMasterStatus(index) {
+        const item = masterData[index];
+        if (!item) return;
+
+        const nextStatus = item.status === 'INACTIVE' ? 'ACTIVE' : 'INACTIVE';
+        const verb = nextStatus === 'ACTIVE' ? 'mengaktifkan' : 'menonaktifkan';
+
+        showConfirm(
+          `Yakin ingin <b>${verb}</b> SKU berikut?<br><br>
+           <b>${escapeHtml(item.sku || '')}</b><br>
+           ${escapeHtml(item.desc || item.description || '')}<br><br>
+           Status baru: <b>${nextStatus}</b>`,
+          async () => {
+            showLoading(true);
+            const res = await masterDataApiCall('setMasterDataStatus', {
+              token: MASTER_EDIT_TOKEN,
+              originalSku: item.sku || '',
+              rowNumber: item.rowNumber || '',
+              status: nextStatus
+            }, 'POST');
+            showLoading(false);
+
+            if (res && res.status === 'success') {
+              item.status = nextStatus;
+              renderMasterPreview();
+              await loadMasterData();
+
+              // The transaction dropdown is rebuilt from ACTIVE SKUs only.
+              if (typeof handleSegmentChange === 'function') {
+                await handleSegmentChange();
+              }
+
+              showAlert('Status SKU Diperbarui',
+                `SKU <b>${escapeHtml(item.sku)}</b> sekarang <b>${nextStatus}</b>.`);
+              playUiSound('save');
+            } else {
+              showAlert('Gagal', res?.message || 'Gagal mengubah status SKU.');
+            }
+          }
+        );
+      }
+
+      async function addMasterItem() {
         const sku = document.getElementById('masterSku').value.trim();
         const desc = document.getElementById('masterDesc').value.trim();
         const segment = document.getElementById('masterSegment').value.trim();
@@ -3636,8 +3740,10 @@ function matrixCellIsReadOnly(cell) {
             // Exact MasterData column mapping:
             // A = Segment, B = SKU / Item Code, C = Description,
             // D = UOM, E = Weight per Zak. F:J stay untouched/blank.
+            const status = document.getElementById('masterStatus')?.value || 'ACTIVE';
             const res = await masterDataApiCall('addMasterData', {
               sheetName: 'MasterData',
+              status: status,
               segment: segment,        // Column A
               sku: sku,                // Column B
               desc: desc,              // Column C
@@ -3655,6 +3761,7 @@ function matrixCellIsReadOnly(cell) {
 
             if (res && res.status === 'success') {
               masterData.push({
+                status: status,
                 segment: segment,  // A
                 sku: sku,          // B
                 desc: desc,        // C
@@ -3678,6 +3785,14 @@ function matrixCellIsReadOnly(cell) {
 
       /* MASTER EDIT EVENTS */
       document.addEventListener('click', (event) => {
+        const toggle = event.target.closest('[data-action="toggle-master-status"]');
+        if (toggle) {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleMasterStatus(Number(toggle.dataset.index));
+          return;
+        }
+
         const btn = event.target.closest('[data-action="edit-master"]');
         if (!btn) return;
         event.preventDefault();
