@@ -2005,8 +2005,8 @@
 
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
-        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec';
-      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbz2K27__OSZF8sl9emptH8Fw-B3CwDGkBYvkybsWaAC6foKJyGfAEJsAuFq95CN6SKOGQ/exec'; 
+        const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbzlwhUBCYQn18DI-JGVydAtkP8Yg_akokbP-j3uc8pyna41kN8st74pzx1el2ikqAI9mQ/exec';
+      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbywxSnTF-KbhFJ8c99Jefe9g-8MjqhUjvbv_rSSX8eMZGfBBH-4Ma_VmWCBejH_ZRDK/exec'; 
 
       let masterData = [], transactionItems = [];
       let activeTransactionSegment = "";
@@ -2764,6 +2764,10 @@
         // SEGMENT (Retail / Project)
         //   SKU | MATERIAL DESCRIPTION | TRANSAKSI | 01-Sep | 02-Sep | ... | TOTAL
         // Satu SKU dibuat sebagai satu blok sehingga revisi Qty mudah dilakukan.
+        // COMMON BAG CONSOLIDATION:
+        // Jika beberapa SKU memiliki Bag Type = COMMON BAG dan Bag Code yang sama,
+        // tampilkan juga ringkasan transaksi gabungan per Bag Code sebelum detail SKU.
+        // Baris ringkasan bersifat READ ONLY; detail SKU di bawah tetap dapat direvisi.
         const getSegment = (row) => {
           const sku = String(row.sku || row.material || row.materialCode || '').trim();
           const direct = String(row.segment || row.segm || '').trim();
@@ -2802,6 +2806,60 @@
           segmentGroups[segment][sku].rows.push({ row, originalIndex });
         });
 
+        // Build COMMON BAG consolidated groups from the MasterData mapping.
+        // A common bag is identified by BAG TYPE + BAG CODE, while the actual
+        // transaction source remains the original SKU rows from Matrix backend.
+        const commonBagGroups = {};
+        rows.forEach((row, originalIndex) => {
+          const skuRaw = getSku(row);
+          if (!skuRaw) return;
+          const master = (masterData || []).find(m =>
+            String(m.sku || '').trim().toLowerCase() === skuRaw.toLowerCase()
+          );
+          const bagType = String(master?.bagType || master?.physical || '').trim().toUpperCase();
+          const bagCode = String(master?.bagCode || '').trim().toUpperCase();
+          if (bagType !== 'COMMON BAG' || !bagCode) return;
+          const key = bagCode;
+          if (!commonBagGroups[key]) {
+            commonBagGroups[key] = {
+              bagCode,
+              description: getDesc(row) || master?.desc || '',
+              skus: new Set(),
+              segments: new Set(),
+              rows: []
+            };
+          }
+          const group = commonBagGroups[key];
+          group.skus.add(skuRaw);
+          group.segments.add(getSegment(row));
+          if (!group.description && master?.desc) group.description = master.desc;
+          group.rows.push({ row, originalIndex });
+        });
+
+        Object.values(commonBagGroups).forEach(group => {
+          group.hasMultipleMappings = group.skus.size > 1;
+          group.transactionRows = {};
+
+          group.rows.forEach(obj => {
+            const row = obj.row;
+            const typeRaw = getType(row) || '-';
+            const typeLower = typeRaw.toLowerCase();
+            const isStock = typeLower.includes('stock on hand') || typeLower.includes('stok on hand') || typeLower === 'on hand';
+            if (isStock) return;
+
+            if (!group.transactionRows[typeRaw]) {
+              group.transactionRows[typeRaw] = {
+                type: typeRaw,
+                values: Object.fromEntries(dates.map(d => [d, 0]))
+              };
+            }
+
+            dates.forEach(date => {
+              group.transactionRows[typeRaw].values[date] += getValue(row, date);
+            });
+          });
+        });
+
         const segmentRank = (segment) => {
           const s = String(segment).toLowerCase();
           if (s === 'retail') return 1;
@@ -2826,6 +2884,71 @@
 
         let html = '';
         const grandDayTotals = Object.fromEntries(dates.map(d => [d, 0]));
+
+        // ================================================================
+        // COMMON BAG — CONSOLIDATED TRANSACTION SUMMARY
+        // ================================================================
+        const consolidatedCommonBags = Object.values(commonBagGroups)
+          .filter(group => group.hasMultipleMappings && Object.keys(group.transactionRows).length)
+          .sort((a,b) => a.bagCode.localeCompare(b.bagCode));
+
+        if (consolidatedCommonBags.length) {
+          const colspan = dates.length + 4;
+          html += `<tr class="matrix-common-summary-head">
+            <td colspan="${colspan}" style="position:sticky;left:0;z-index:4;background:linear-gradient(90deg,#dbeafe,#eff6ff);color:#0f172a;font-weight:800;padding:10px 12px;border-bottom:1px solid #bfdbfe;">
+              <i class="fas fa-link" style="color:#2563eb;"></i>&nbsp; COMMON BAG — TOTAL TRANSAKSI GABUNGAN
+              <span style="font-size:10px;color:#475569;margin-left:8px;">Retail + Project berdasarkan Bag Code</span>
+            </td>
+          </tr>`;
+
+          consolidatedCommonBags.forEach(group => {
+            const segList = [...group.segments].filter(Boolean).sort((a,b) => segmentRank(a)-segmentRank(b) || String(a).localeCompare(String(b)));
+            const skuList = [...group.skus].sort();
+            const types = Object.values(group.transactionRows).sort((a,b) => {
+              const sa = a.type.toLowerCase();
+              const sb = b.type.toLowerCase();
+              const order = t => t.includes('output production') ? 1 : t.includes('selling in') ? 2 : t.includes('delivery') ? 3 : 10;
+              return order(sa) - order(sb) || a.type.localeCompare(b.type);
+            });
+
+            html += `<tr style="background:#f8fbff;">
+              <td class="sticky-sku matrix-sku-cell" style="font-weight:800;color:#1d4ed8;">COMMON
+                <div style="font-size:10px;color:#64748b;margin-top:3px;">${escapeHtml(group.bagCode)}</div>
+              </td>
+              <td class="sticky-desc matrix-desc-cell" style="font-weight:700;">
+                ${escapeHtml(group.description || '-')}
+                <div style="font-size:10px;color:#64748b;font-weight:600;margin-top:3px;">
+                  ${escapeHtml(segList.join(' + ') || '-')} · ${skuList.length} SAP Item
+                </div>
+              </td>
+              <td class="sticky-type" style="font-weight:800;color:#1e40af;">TOTAL TRANSAKSI</td>`;
+
+            let totalNet = 0;
+            dates.forEach(date => {
+              const value = types.reduce((sum, item) => sum + Number(item.values[date] || 0), 0);
+              totalNet += value;
+              const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
+              html += `<td class="matrix-qty matrix-readonly ${cls}" data-readonly="true" title="COMMON BAG ${escapeHtml(group.bagCode)} — total transaksi gabungan">${formatMatrixQty(value)}</td>`;
+            });
+
+            html += `<td style="text-align:right;font-weight:900;color:#1e40af;">${formatMatrixQty(totalNet)}</td></tr>`;
+
+            types.forEach(item => {
+              let rowTotal = 0;
+              html += `<tr style="background:#fbfdff;">
+                <td class="sticky-sku"></td>
+                <td class="sticky-desc" style="color:#64748b;font-size:10px;">↳ Consolidated ${escapeHtml(group.bagCode)}</td>
+                <td class="sticky-type" style="padding-left:18px;color:#334155;">↳ ${escapeHtml(item.type)}</td>`;
+                dates.forEach(date => {
+                  const value = Number(item.values[date] || 0);
+                  rowTotal += value;
+                  const cls = value < 0 ? 'matrix-negative' : (value > 0 ? 'matrix-positive' : '');
+                  html += `<td class="matrix-qty matrix-readonly ${cls}" data-readonly="true" title="COMMON BAG ${escapeHtml(group.bagCode)} — consolidated, read only">${formatMatrixQty(value)}</td>`;
+                });
+                html += `<td style="text-align:right;font-weight:800;color:#475569;">${formatMatrixQty(rowTotal)}</td></tr>`;
+            });
+          });
+        }
 
         orderedSegments.forEach(segment => {
           const skuGroups = Object.values(segmentGroups[segment]).sort((a,b) => a.sku.localeCompare(b.sku));
