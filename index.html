@@ -1288,6 +1288,112 @@
         display:none; margin-top:7px; padding:7px 9px; border-radius:8px;
         background:#f8fafc; border:1px solid #e2e8f0; color:#475569; font-size:10px;
       }
+      /* COMMON BAG DESCRIPTION SUMMARY */
+      .tx-description-box {
+        border:1px solid #dbe4ef;
+        border-radius:10px;
+        background:#f8fafc;
+        overflow:hidden;
+      }
+      .tx-description-box.single {
+        min-height:44px;
+        display:flex;
+        align-items:center;
+        padding:0 12px;
+        color:#0f172a;
+        font-size:11px;
+        line-height:1.45;
+      }
+      .tx-common-summary {
+        padding:10px 12px;
+      }
+      .tx-common-summary-head {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        margin-bottom:8px;
+      }
+      .tx-common-summary-title {
+        font-size:10px;
+        font-weight:800;
+        color:#0f172a;
+        text-transform:uppercase;
+        letter-spacing:.35px;
+      }
+      .tx-common-summary-code {
+        display:inline-flex;
+        align-items:center;
+        padding:4px 8px;
+        border-radius:999px;
+        background:#ecfdf5;
+        border:1px solid #a7f3d0;
+        color:#047857;
+        font-size:9px;
+        font-weight:800;
+      }
+      .tx-common-summary-row {
+        display:grid;
+        grid-template-columns:78px minmax(0,1fr) auto;
+        gap:8px;
+        align-items:center;
+        padding:8px 0;
+        border-top:1px solid #e5eaf1;
+      }
+      .tx-common-summary-row:first-of-type { border-top:0; }
+      .tx-common-summary-seg {
+        font-size:9px;
+        font-weight:800;
+        color:#334155;
+        text-transform:uppercase;
+      }
+      .tx-common-summary-item {
+        min-width:0;
+      }
+      .tx-common-summary-sku {
+        font-size:10px;
+        font-weight:800;
+        color:#0f172a;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .tx-common-summary-desc {
+        margin-top:2px;
+        font-size:9px;
+        color:#64748b;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+      .tx-common-summary-qty {
+        font-size:11px;
+        font-weight:800;
+        color:#0f766e;
+        white-space:nowrap;
+        font-variant-numeric:tabular-nums;
+      }
+      .tx-common-summary-total {
+        margin-top:7px;
+        padding-top:8px;
+        border-top:1px dashed #cbd5e1;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        font-size:10px;
+        font-weight:800;
+        color:#0f172a;
+      }
+      .tx-common-summary-total strong {
+        color:#1d4ed8;
+        font-size:12px;
+      }
+      @media(max-width:600px){
+        .tx-common-summary-row { grid-template-columns:68px minmax(0,1fr) auto; gap:6px; }
+        .tx-common-summary-qty { font-size:10px; }
+      }
+
       .tx-mapping-badge.is-open { display:block; }
       .md-bag-type, .md-bag-code {
         display:inline-flex; align-items:center; min-height:22px; padding:0 8px;
@@ -1687,7 +1793,11 @@
               <div id="commonBagGrid" class="common-bag-grid"></div>
             </div>
 
-            <div class="form-row"><div style="grid-column: 1/-1;"><label>Deskripsi</label><input type="text" id="desc" readonly style="background:#f1f5f9;"></div></div>
+            <div class="form-row"><div style="grid-column: 1/-1;">
+              <label>Deskripsi</label>
+              <input type="hidden" id="desc" value="">
+              <div id="txDescriptionDisplay" class="tx-description-box single">Pilih Bag / SAP Item untuk melihat deskripsi.</div>
+            </div></div>
             <div class="form-row">
               <div><label>BIN</label><select id="bin"><option value="">Pilih BIN</option><option value="FG-A">FG-A</option><option value="FG-B">FG-B</option><option value="FG-C">FG-C</option><option value="FG-D">FG-D</option><option value="FG-E">FG-E</option><option value="RACK">RACK</option></select></div>
               <div><label>Lot Number</label><input type="text" id="lot" placeholder="Contoh: A-123"></div>
@@ -3176,12 +3286,67 @@ function matrixCellIsReadOnly(cell) {
         );
       }
 
+      function renderTransactionDescription(record) {
+        const display = document.getElementById('txDescriptionDisplay');
+        if (!display) return;
+
+        if (!record) {
+          display.className = 'tx-description-box single';
+          display.textContent = 'Pilih Bag / SAP Item untuk melihat deskripsi.';
+          return;
+        }
+
+        const isCommon = String(record.bagType || '').trim().toUpperCase() === 'COMMON BAG' && !!record.bagCode;
+        const activeDesc = String(record.desc || record.description || '').trim();
+
+        if (!isCommon) {
+          display.className = 'tx-description-box single';
+          display.textContent = activeDesc || '-';
+          return;
+        }
+
+        const peers = commonBagPeersFor(record).sort((a,b) => {
+          const sa = String(a.segment || '').localeCompare(String(b.segment || ''));
+          return sa || String(a.sku || '').localeCompare(String(b.sku || ''));
+        });
+
+        const totalQty = peers.reduce((sum, p) => sum + (Number(stockQtyForSku(p.sku)) || 0), 0);
+        const rows = peers.map(p => {
+          const qty = Number(stockQtyForSku(p.sku)) || 0;
+          return `
+            <div class="tx-common-summary-row">
+              <div class="tx-common-summary-seg">${escapeHtml(p.segment || '-')}</div>
+              <div class="tx-common-summary-item">
+                <div class="tx-common-summary-sku">${escapeHtml(p.sku || '-')}</div>
+                <div class="tx-common-summary-desc">${escapeHtml(p.desc || p.description || '-')}</div>
+              </div>
+              <div class="tx-common-summary-qty">${qty.toLocaleString('id-ID')} Zak</div>
+            </div>`;
+        }).join('');
+
+        display.className = 'tx-description-box';
+        display.innerHTML = `
+          <div class="tx-common-summary">
+            <div class="tx-common-summary-head">
+              <div class="tx-common-summary-title">Common Bag · Deskripsi & Stok</div>
+              <span class="tx-common-summary-code">BAG ${escapeHtml(record.bagCode)}</span>
+            </div>
+            ${rows || `<div style="font-size:10px;color:#64748b;">Belum ada mapping segment untuk Bag Code ini.</div>`}
+            <div class="tx-common-summary-total">
+              <span>TOTAL STOCK COMMON BAG</span>
+              <strong>${totalQty.toLocaleString('id-ID')} Zak</strong>
+            </div>
+          </div>`;
+      }
+
       function renderCommonBagPanel(record) {
         const panel = document.getElementById('commonBagPanel');
         const grid = document.getElementById('commonBagGrid');
         const badge = document.getElementById('commonBagCodeBadge');
         const mappingBadge = document.getElementById('txMappingBadge');
         if (!panel || !grid || !badge) return;
+
+        renderTransactionDescription(record);
 
         if (!record || String(record.bagType || '').toUpperCase() !== 'COMMON BAG' || !record.bagCode) {
           panel.classList.remove('is-open');
@@ -3342,6 +3507,7 @@ function matrixCellIsReadOnly(cell) {
 
         if (!f) {
           document.getElementById('desc').value = "";
+          renderTransactionDescription(null);
           if (stockInput) stockInput.value = "";
           fifoText.innerHTML = "Pilih Bag / SKU untuk melihat rekomendasi BIN & Lot tertua.";
           renderCommonBagPanel(null);
@@ -3349,6 +3515,7 @@ function matrixCellIsReadOnly(cell) {
         }
 
         document.getElementById('desc').value = f.desc || f.description || '';
+        renderTransactionDescription(f);
         stockInput.value = "Memuat...";
         fifoText.innerHTML = "Memuat rekomendasi FIFO...";
 
@@ -3478,6 +3645,7 @@ function matrixCellIsReadOnly(cell) {
         renderTable();
         document.getElementById('sku').value = ""; 
         document.getElementById('desc').value = ""; 
+        renderTransactionDescription(null);
         document.getElementById('lot').value = ""; 
         document.getElementById('qty').value = ""; 
         document.getElementById('stockOnHand').value = "";
