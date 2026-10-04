@@ -1943,7 +1943,7 @@
           </div>
 
           <div class="required-note">
-            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:G</b> pada sheet <b>MasterData</b>: Segment, SKU, Description, UOM, Weight, Bag Type, Bag Code.
+            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:E</b> dan <b>K:L</b> pada sheet <b>MasterData</b>: Segment, SKU, Description, UOM, Weight, Bag Type, Bag Code.
           </div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -2502,8 +2502,10 @@
 
       function normalizeMasterDataRecord(m) {
         if (!m) return null;
-        const bagTypeRaw = m.bagType ?? m.BagType ?? m['Bag Type'] ?? m[5] ?? '';
-        const bagCodeRaw = m.bagCode ?? m.BagCode ?? m['Bag Code'] ?? m[6] ?? '';
+        // MasterData existing sheet: K = Physical, L = Bag Code.
+        // Keep aliases for API/object responses and support both header names.
+        const bagTypeRaw = m.bagType ?? m.BagType ?? m.physical ?? m.Physical ?? m['Bag Type'] ?? m['Physical'] ?? m[10] ?? '';
+        const bagCodeRaw = m.bagCode ?? m.BagCode ?? m['Bag Code'] ?? m[11] ?? '';
         return {
           rowNumber: m.rowNumber ?? m.row ?? null,
           status: String(m.status ?? m.Status ?? 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
@@ -2514,6 +2516,7 @@
           uom: m.uom ?? m.UOM ?? m[3] ?? '',
           weight: m.weight ?? m.weightPerZak ?? m['Weight per Zak'] ?? m[4] ?? '',
           bagType: String(bagTypeRaw).trim().toUpperCase(),
+          physical: String(bagTypeRaw).trim().toUpperCase(),
           bagCode: String(bagCodeRaw).trim().toUpperCase()
         };
       }
@@ -4019,8 +4022,9 @@ function matrixCellIsReadOnly(cell) {
               weight: weight,
               weightPerZak: weight,
               bagType: bagType,
+              physical: bagType,
               bagCode: bagCode,
-              columns: ['A','B','C','D','E','F','G'],
+              columns: ['A','B','C','D','E','K','L'],
               rowValues: [segment, sku, desc, uom, weight, bagType, bagCode]
             }, 'POST');
             showLoading(false);
@@ -4029,7 +4033,7 @@ function matrixCellIsReadOnly(cell) {
               masterData[index] = {
                 ...masterData[index],
                 status, segment, sku, desc, description: desc, uom,
-                weight, weightPerZak: weight, bagType, bagCode
+                weight, weightPerZak: weight, bagType, physical: bagType, bagCode
               };
               renderMasterPreview();
               restoreMasterAddMode();
@@ -4147,8 +4151,9 @@ function matrixCellIsReadOnly(cell) {
               weight: weight,
               weightPerZak: weight,
               bagType: bagType,
+              physical: bagType,
               bagCode: bagCode,
-              columns: ['A','B','C','D','E','F','G'],
+              columns: ['A','B','C','D','E','K','L'],
               rowValues: [segment, sku, desc, uom, weight, bagType, bagCode]
             }, 'POST');
 
