@@ -1288,6 +1288,10 @@
         display:none; margin-top:7px; padding:7px 9px; border-radius:8px;
         background:#f8fafc; border:1px solid #e2e8f0; color:#475569; font-size:10px;
       }
+      #sku.common-bag-active {
+        border-color:#2563eb !important;
+        box-shadow:0 0 0 3px rgba(37,99,235,.10);
+      }
       /* COMMON BAG DESCRIPTION SUMMARY */
       .tx-description-box {
         border:1px solid #dbe4ef;
@@ -2002,7 +2006,7 @@
       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw8aAsqqm8YgyY7lCeXaZeaj-46heZwpqEUuJKt-dd2UuX1p6sRVkvhIvq8UeNFDN7rPA/exec';
         // Backend khusus Stock Transaction Matrix (terpisah dari WMS Core)
         const STOCK_MATRIX_URL = 'https://script.google.com/macros/s/AKfycbwoLbVUVTVUYF6rjLwdG713N8hQNcgFJ3zm7kTYyV4aXXhIrbKCgn0KouXYhzakt3UtfA/exec';
-      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbz6jBxJD8KDYbWJtvPBTvj7239TxKO2CU-kSOT8H_OGPNrg1griaWASeR1PuTcHggCgFA/exec'; 
+      const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbz2K27__OSZF8sl9emptH8Fw-B3CwDGkBYvkybsWaAC6foKJyGfAEJsAuFq95CN6SKOGQ/exec'; 
 
       let masterData = [], transactionItems = [];
       let activeTransactionSegment = "";
@@ -3379,6 +3383,8 @@ function matrixCellIsReadOnly(cell) {
         if (!panel || !grid || !badge) return;
 
         renderTransactionDescription(record);
+        const skuSelect = document.getElementById('sku');
+        if (skuSelect) skuSelect.classList.toggle('common-bag-active', !!(record && String(record.bagType || '').toUpperCase() === 'COMMON BAG' && record.bagCode));
 
         if (!record || String(record.bagType || '').toUpperCase() !== 'COMMON BAG' || !record.bagCode) {
           panel.classList.remove('is-open');
@@ -3473,6 +3479,20 @@ function matrixCellIsReadOnly(cell) {
             String(m.bagType || '').trim().toUpperCase() === 'COMMON BAG' &&
             commonCodes.includes(String(m.bagCode || '').trim().toLowerCase())
           );
+
+          // Untuk COMMON BAG, stok perlu dimuat saat daftar dibuka supaya
+          // Retail + Project langsung terlihat beserta Qty-nya di dropdown.
+          if (!cachedReportSummary) {
+            try {
+              const today = new Date().toISOString().split('T')[0];
+              const reportRes = await apiCall(`getReportData&date=${today}`);
+              if (reportRes && Array.isArray(reportRes.summary)) {
+                cachedReportSummary = reportRes.summary;
+              }
+            } catch (e) {
+              console.error('Gagal mengambil stok COMMON BAG:', e);
+            }
+          }
         }
 
         let filtered = uniqueBySku(selectedRows.concat(commonPeers));
@@ -3526,11 +3546,27 @@ function matrixCellIsReadOnly(cell) {
         });
 
         sel.appendChild(fragment);
+
+        // Tambahkan ringkasan TOTAL di dropdown untuk COMMON BAG.
+        if (commonCodes.length) {
+          const commonTotal = commonPeers.reduce((sum, item) =>
+            sum + Number(stockQtyForSku(item.sku) || 0), 0
+          );
+          const totalOption = new Option(
+            `──────── TOTAL COMMON BAG • ${Number(commonTotal).toLocaleString('id-ID')} Zak ────────`,
+            `__COMMON_TOTAL__${commonCodes.join('|')}`
+          );
+          totalOption.disabled = true;
+          totalOption.style.fontWeight = '800';
+          sel.appendChild(totalOption);
+        }
+
         sel.disabled = false;
       }
 
       async function autoFillDesc() {
         const v = document.getElementById('sku').value;
+        if (!v || String(v).startsWith('__COMMON_TOTAL__')) return;
         const f = masterData.find(m => String(m.sku || '') === String(v || ''));
         const stockInput = document.getElementById('stockOnHand');
         const fifoText = document.getElementById('fifoRecommendationText');
