@@ -169,7 +169,7 @@
       }
 
       .nav-tabs { display: flex; background: white; padding: 5px; border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; gap: 5px; }
-      .nav-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex: 1; transition: 0.2s; }
+      .nav-btn { background: none; border: none; padding: 10px 20px; cursor: pointer; border-radius: 8px; font-weight: 600; color: var(--text-muted); white-space: nowrap; flex: 1; transition: 0.2s; text-decoration: none; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
       .nav-btn.active { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
 
       /* GENERAL UI */
@@ -1144,7 +1144,7 @@
       }
       #masterPreviewTable {
         width:100%;
-        min-width:920px;
+        min-width:1180px;
         border-collapse:separate;
         border-spacing:0;
         font-size:11px;
@@ -1242,6 +1242,60 @@
         text-align:center !important;
         color:#94a3b8 !important;
       }
+
+      /* COMMON BAG / PHYSICAL BAG MAPPING */
+      .common-bag-panel {
+        display:none;
+        margin:0 0 15px;
+        border:1px solid #cbd5e1;
+        border-radius:12px;
+        background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);
+        overflow:hidden;
+      }
+      .common-bag-panel.is-open { display:block; }
+      .common-bag-head {
+        padding:11px 13px;
+        border-bottom:1px solid #e2e8f0;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        flex-wrap:wrap;
+      }
+      .common-bag-title { font-size:11px; font-weight:800; color:#0f172a; }
+      .common-bag-subtitle { font-size:10px; color:#64748b; margin-top:2px; }
+      .common-bag-code {
+        display:inline-flex; align-items:center; padding:5px 9px; border-radius:999px;
+        background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8;
+        font-size:10px; font-weight:800;
+      }
+      .common-bag-grid {
+        display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+        gap:8px; padding:10px;
+      }
+      .common-bag-item {
+        border:1px solid #e2e8f0; background:#fff; border-radius:10px; padding:10px;
+        cursor:pointer; transition:.15s ease;
+      }
+      .common-bag-item:hover { border-color:#93c5fd; box-shadow:0 5px 16px rgba(15,23,42,.08); transform:translateY(-1px); }
+      .common-bag-item.selected { border-color:#2563eb; background:#eff6ff; box-shadow:0 0 0 2px rgba(37,99,235,.08); }
+      .common-bag-item .seg { font-size:10px; font-weight:800; color:#334155; text-transform:uppercase; }
+      .common-bag-item .sap { margin-top:4px; font-size:11px; font-weight:800; color:#0f172a; word-break:break-word; }
+      .common-bag-item .qty { margin-top:6px; font-size:13px; font-weight:800; color:#0f766e; }
+      .common-bag-item .qty.zero { color:#94a3b8; }
+      .common-bag-item .status { margin-top:3px; font-size:9px; color:#64748b; }
+      .tx-mapping-badge {
+        display:none; margin-top:7px; padding:7px 9px; border-radius:8px;
+        background:#f8fafc; border:1px solid #e2e8f0; color:#475569; font-size:10px;
+      }
+      .tx-mapping-badge.is-open { display:block; }
+      .md-bag-type, .md-bag-code {
+        display:inline-flex; align-items:center; min-height:22px; padding:0 8px;
+        border-radius:999px; font-size:9px; font-weight:800; white-space:nowrap;
+      }
+      .md-bag-type.common { background:#ecfdf5; border:1px solid #a7f3d0; color:#047857; }
+      .md-bag-type.dedicated { background:#fff7ed; border:1px solid #fed7aa; color:#c2410c; }
+      .md-bag-code { background:#eff6ff; border:1px solid #bfdbfe; color:#1d4ed8; }
 
       /* Token gate for Master Data editing */
       #masterEditModal {
@@ -1515,6 +1569,9 @@
           </div>
         </div>
         <nav class="nav-tabs">
+          <a class="nav-btn" id="nav-home" href="https://fg-logistics.github.io/FG/" title="Kembali ke halaman utama FG Logistics" aria-label="Home">
+            <i class="fas fa-house" aria-hidden="true"></i> Home
+          </a>
           <button class="nav-btn active" id="nav-entry" onclick="switchPage('entry')">Transaksi</button>
           <button class="nav-btn" id="nav-stocktrx" onclick="switchPage('stocktrx')">Stok Transaksi</button>
           <button class="nav-btn" id="nav-master" onclick="switchPage('master')">Master Data</button>
@@ -1612,8 +1669,24 @@
 
             <div class="form-row">
               <div><label>Segment</label><select id="segment" onchange="filterSKU()"><option value="">Pilih Segment</option><option value="Retail">Retail</option><option value="Project">Project</option><option value="General">General</option></select></div>
-              <div><label>SKU</label><select id="sku" onchange="autoFillDesc()" disabled><option>Pilih SKU</option></select></div>
+              <div>
+                <label>Bag / SAP Item</label>
+                <select id="sku" onchange="autoFillDesc()" disabled><option value="">Pilih Bag / SKU</option></select>
+                <div id="txMappingBadge" class="tx-mapping-badge"></div>
+              </div>
             </div>
+
+            <div id="commonBagPanel" class="common-bag-panel" aria-live="polite">
+              <div class="common-bag-head">
+                <div>
+                  <div class="common-bag-title">COMMON BAG — Mapping Segment</div>
+                  <div class="common-bag-subtitle">Bag fisik sama. Pilih mapping SAP yang akan digunakan untuk transaksi.</div>
+                </div>
+                <span id="commonBagCodeBadge" class="common-bag-code">BAG -</span>
+              </div>
+              <div id="commonBagGrid" class="common-bag-grid"></div>
+            </div>
+
             <div class="form-row"><div style="grid-column: 1/-1;"><label>Deskripsi</label><input type="text" id="desc" readonly style="background:#f1f5f9;"></div></div>
             <div class="form-row">
               <div><label>BIN</label><select id="bin"><option value="">Pilih BIN</option><option value="FG-A">FG-A</option><option value="FG-B">FG-B</option><option value="FG-C">FG-C</option><option value="FG-D">FG-D</option><option value="FG-E">FG-E</option><option value="RACK">RACK</option></select></div>
@@ -1632,7 +1705,7 @@
             <button onclick="addItemToList()" class="btn-add">+ Tambah Item ke Keranjang</button>
           </div>
           <div style="font-weight:700; margin-bottom:10px; color:var(--text-muted); font-size:12px;">3. KERANJANG DRAFT</div>
-          <div class="table-wrapper"><table id="transactionTable"><thead><tr><th>Tipe</th><th>SKU</th><th>Desc</th><th>BIN</th><th>Lot</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody><tr id="emptyRow"><td colspan="8" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr></tbody></table></div>
+          <div class="table-wrapper"><table id="transactionTable"><thead><tr><th>Tipe</th><th>Segment</th><th>SKU</th><th>Desc</th><th>BIN</th><th>Lot</th><th>Qty</th><th>Keterangan</th><th>Aksi</th></tr></thead><tbody><tr id="emptyRow"><td colspan="9" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr></tbody></table></div>
           <button id="btnSubmitAll" onclick="submitAll()" class="btn-primary" disabled>Simpan & Proses Transaksi</button>
         </div>
         <div class="card" style="border-top: 4px solid var(--success);"><h3>Riwayat Hari Ini</h3><div class="table-wrapper"><table id="todayTable"><thead><tr><th>Jam</th><th>Tipe</th><th>SKU</th><th>Desc</th><th>Qty</th></tr></thead><tbody></tbody></table></div></div>
@@ -1721,6 +1794,21 @@
 
           <div class="form-row">
             <div>
+              <label>Bag Type <span class="required-mark">*</span></label>
+              <select id="masterBagType" required>
+                <option value="">Pilih Bag Type</option>
+                <option value="COMMON BAG">COMMON BAG — bag fisik sama lintas segment</option>
+                <option value="DEDICATED BAG">DEDICATED BAG — bag khusus segment</option>
+              </select>
+            </div>
+            <div>
+              <label>Bag Code <span class="required-mark">*</span></label>
+              <input type="text" id="masterBagCode" placeholder="Contoh: D1" autocomplete="off" required>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
               <label>Status Produk <span class="required-mark">*</span></label>
               <select id="masterStatus" required>
                 <option value="ACTIVE">Active — tampil di Transaksi</option>
@@ -1745,7 +1833,7 @@
           </div>
 
           <div class="required-note">
-            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:E</b> pada sheet <b>MasterData</b>.
+            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:G</b> pada sheet <b>MasterData</b>: Segment, SKU, Description, UOM, Weight, Bag Type, Bag Code.
           </div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1763,7 +1851,7 @@
             <div>
               <h3 style="margin:0;">Preview Master Data</h3>
               <div style="font-size:10px;color:#64748b;margin-top:3px;">
-                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · Status dikelola terpisah · API v2
+                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · F Bag Type · G Bag Code · Status
               </div>
             </div>
             <span id="masterCount" style="font-size:11px;font-weight:800;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:5px 9px;border-radius:999px;">0 SKU</span>
@@ -1778,12 +1866,14 @@
                   <th>Description</th>
                   <th>UOM</th>
                   <th>Weight / Zak (kg)</th>
+                  <th>Bag Type</th>
+                  <th>Bag Code</th>
                   <th>Status</th>
                   <th style="text-align:right;">Aksi</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="8" class="md-empty">Belum ada data</td></tr>
+                <tr><td colspan="10" class="md-empty">Belum ada data</td></tr>
               </tbody>
             </table>
           </div>
@@ -1805,6 +1895,7 @@
       const MASTERDATA_URL = 'https://script.google.com/macros/s/AKfycbz6jBxJD8KDYbWJtvPBTvj7239TxKO2CU-kSOT8H_OGPNrg1griaWASeR1PuTcHggCgFA/exec'; 
 
       let masterData = [], transactionItems = [];
+      let activeTransactionSegment = "";
       let cachedReportSummary = null; // Local cache for instant FIFO lookups
       let stockTransactionMatrixData = { dates: [], rows: [] };
       let matrixDirtyChanges = {};
@@ -2292,13 +2383,17 @@
         if (segment) {
           await filterSKU();
         } else {
-          document.getElementById('sku').innerHTML = '<option value="">Pilih SKU</option>';
+          document.getElementById('sku').innerHTML = '<option value="">Pilih Bag / SKU</option>';
           document.getElementById('sku').disabled = true;
+          activeTransactionSegment = '';
+          renderCommonBagPanel(null);
         }
       }
 
       function normalizeMasterDataRecord(m) {
         if (!m) return null;
+        const bagTypeRaw = m.bagType ?? m.BagType ?? m['Bag Type'] ?? m[5] ?? '';
+        const bagCodeRaw = m.bagCode ?? m.BagCode ?? m['Bag Code'] ?? m[6] ?? '';
         return {
           rowNumber: m.rowNumber ?? m.row ?? null,
           status: String(m.status ?? m.Status ?? 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
@@ -2307,7 +2402,9 @@
           desc: m.desc ?? m.description ?? m.Description ?? m[2] ?? '',
           description: m.description ?? m.desc ?? m.Description ?? m[2] ?? '',
           uom: m.uom ?? m.UOM ?? m[3] ?? '',
-          weight: m.weight ?? m.weightPerZak ?? m['Weight per Zak'] ?? m[4] ?? ''
+          weight: m.weight ?? m.weightPerZak ?? m['Weight per Zak'] ?? m[4] ?? '',
+          bagType: String(bagTypeRaw).trim().toUpperCase(),
+          bagCode: String(bagCodeRaw).trim().toUpperCase()
         };
       }
 
@@ -3052,13 +3149,101 @@ function matrixCellIsReadOnly(cell) {
           }
       }
 
+      function stockQtyForSku(sku, summary = cachedReportSummary) {
+        if (!Array.isArray(summary)) return 0;
+        const key = String(sku || '').trim().toLowerCase();
+        const row = summary.find(s => String(s.sku || '').trim().toLowerCase() === key);
+        return row ? (Number(row.qty) || 0) : 0;
+      }
+
+      function uniqueBySku(rows) {
+        const seen = new Set();
+        return rows.filter(m => {
+          const key = String(m.sku || '').trim().toLowerCase();
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+      }
+
+      function commonBagPeersFor(record) {
+        if (!record || String(record.bagType || '').toUpperCase() !== 'COMMON BAG' || !record.bagCode) return [];
+        const code = String(record.bagCode).trim().toLowerCase();
+        return masterData.filter(m =>
+          m.status !== 'INACTIVE' &&
+          String(m.bagType || '').trim().toUpperCase() === 'COMMON BAG' &&
+          String(m.bagCode || '').trim().toLowerCase() === code
+        );
+      }
+
+      function renderCommonBagPanel(record) {
+        const panel = document.getElementById('commonBagPanel');
+        const grid = document.getElementById('commonBagGrid');
+        const badge = document.getElementById('commonBagCodeBadge');
+        const mappingBadge = document.getElementById('txMappingBadge');
+        if (!panel || !grid || !badge) return;
+
+        if (!record || String(record.bagType || '').toUpperCase() !== 'COMMON BAG' || !record.bagCode) {
+          panel.classList.remove('is-open');
+          grid.innerHTML = '';
+          if (mappingBadge) {
+            mappingBadge.classList.remove('is-open');
+            mappingBadge.innerHTML = '';
+          }
+          return;
+        }
+
+        const peers = commonBagPeersFor(record).sort((a,b) => {
+          const sa = String(a.segment || '').localeCompare(String(b.segment || ''));
+          return sa || String(a.sku || '').localeCompare(String(b.sku || ''));
+        });
+
+        badge.textContent = 'BAG ' + record.bagCode;
+        panel.classList.add('is-open');
+        grid.innerHTML = peers.map(p => {
+          const qty = stockQtyForSku(p.sku);
+          const selected = String(p.sku).trim().toLowerCase() === String(record.sku).trim().toLowerCase();
+          return `<div class="common-bag-item ${selected ? 'selected' : ''}" data-common-sku="${escapeHtml(p.sku)}" title="Pilih mapping ${escapeHtml(p.segment)}">
+                    <div class="seg">${escapeHtml(p.segment || '-')}</div>
+                    <div class="sap">${escapeHtml(p.sku || '-')}</div>
+                    <div class="qty ${qty <= 0 ? 'zero' : ''}">${Number(qty).toLocaleString('id-ID')} Zak</div>
+                    <div class="status">${selected ? 'Mapping aktif' : 'Klik untuk gunakan mapping ini'}</div>
+                  </div>`;
+        }).join('');
+
+        if (mappingBadge) {
+          mappingBadge.classList.add('is-open');
+          mappingBadge.innerHTML = `COMMON BAG <b>${escapeHtml(record.bagCode)}</b> · mapping aktif: <b>${escapeHtml(record.segment)}</b> · SAP <b>${escapeHtml(record.sku)}</b>`;
+        }
+
+        grid.querySelectorAll('[data-common-sku]').forEach(el => {
+          el.addEventListener('click', () => {
+            const targetSku = el.getAttribute('data-common-sku') || '';
+            const target = masterData.find(m => String(m.sku || '').trim().toLowerCase() === targetSku.trim().toLowerCase());
+            if (!target) return;
+            const sel = document.getElementById('sku');
+            if (sel) {
+              sel.value = target.sku;
+              autoFillDesc();
+            }
+          });
+        });
+      }
+
       async function filterSKU() {
         const selectedSegment = document.getElementById('segment').value.trim().toLowerCase();
         const sel = document.getElementById('sku');
         const transType = document.getElementById('transType').value.toLowerCase();
 
-        sel.innerHTML = '<option value="">Memuat SKU...</option>';
+        sel.innerHTML = '<option value="">Memuat Bag / SKU...</option>';
         sel.disabled = true;
+        activeTransactionSegment = '';
+        renderCommonBagPanel(null);
+
+        if(!selectedSegment) {
+          sel.innerHTML = '<option value="">Pilih Segment terlebih dahulu</option>';
+          return;
+        }
 
         if(!masterData || masterData.length === 0) {
           sel.innerHTML = '<option value="">Data Master kosong / gagal dimuat</option>';
@@ -3073,12 +3258,28 @@ function matrixCellIsReadOnly(cell) {
                                transType.includes('repack negatif') ||
                                transType.includes('adjustment negatif');
 
-        let filtered = masterData.filter(m =>
+        let selectedRows = masterData.filter(m =>
           m.status !== 'INACTIVE' &&
-          m.segment && m.segment.trim().toLowerCase() === selectedSegment
+          m.segment && String(m.segment).trim().toLowerCase() === selectedSegment
         );
 
-        // Request stok hanya sekali jika cache belum siap.
+        // COMMON BAG: saat memilih satu segment, ikut tampilkan mapping segment lain
+        // yang menggunakan Bag Code fisik yang sama.
+        const commonCodes = [...new Set(selectedRows
+          .filter(m => String(m.bagType || '').trim().toUpperCase() === 'COMMON BAG' && m.bagCode)
+          .map(m => String(m.bagCode).trim().toLowerCase()))];
+
+        let commonPeers = [];
+        if (commonCodes.length) {
+          commonPeers = masterData.filter(m =>
+            m.status !== 'INACTIVE' &&
+            String(m.bagType || '').trim().toUpperCase() === 'COMMON BAG' &&
+            commonCodes.includes(String(m.bagCode || '').trim().toLowerCase())
+          );
+        }
+
+        let filtered = uniqueBySku(selectedRows.concat(commonPeers));
+
         if (isStockReducer && !cachedReportSummary) {
           try {
             const today = new Date().toISOString().split('T')[0];
@@ -3091,92 +3292,97 @@ function matrixCellIsReadOnly(cell) {
           }
         }
 
-        // Transaksi pengurang stok: sembunyikan SKU dengan stok 0.
         if (isStockReducer) {
           if(Array.isArray(cachedReportSummary)) {
-            const stockMap = {};
-            cachedReportSummary.forEach(s => {
-              stockMap[String(s.sku).trim()] = Number(s.qty) || 0;
-            });
-
-            filtered = filtered.filter(m =>
-              (stockMap[String(m.sku).trim()] || 0) > 0
-            );
+            filtered = filtered.filter(m => stockQtyForSku(m.sku) > 0);
           } else {
             filtered = [];
           }
         }
 
-        sel.innerHTML = '<option value="">Pilih SKU</option>';
+        sel.innerHTML = '<option value="">Pilih Bag / SAP Item</option>';
 
         if(filtered.length === 0) {
           sel.innerHTML = isStockReducer
-            ? '<option value="">Tidak ada SKU dengan Stok On-Hand > 0</option>'
-            : '<option value="">Tidak ada SKU untuk segment ini</option>';
+            ? '<option value="">Tidak ada Bag / SAP Item dengan Stok On-Hand > 0</option>'
+            : '<option value="">Tidak ada Bag / SKU untuk segment ini</option>';
           sel.disabled = false;
           return;
         }
 
+        filtered.sort((a,b) => {
+          const aSelected = String(a.segment || '').trim().toLowerCase() === selectedSegment ? 0 : 1;
+          const bSelected = String(b.segment || '').trim().toLowerCase() === selectedSegment ? 0 : 1;
+          if (aSelected !== bSelected) return aSelected - bSelected;
+          const aCommon = String(a.bagType || '').toUpperCase() === 'COMMON BAG' ? 0 : 1;
+          const bCommon = String(b.bagType || '').toUpperCase() === 'COMMON BAG' ? 0 : 1;
+          if (aCommon !== bCommon) return aCommon - bCommon;
+          return String(a.bagCode || '').localeCompare(String(b.bagCode || '')) || String(a.sku || '').localeCompare(String(b.sku || ''));
+        });
+
         const fragment = document.createDocumentFragment();
         filtered.forEach(m => {
-          let descPendek = (m.desc && m.desc.length > 50)
-            ? m.desc.substring(0, 50) + "..."
-            : m.desc;
-          fragment.appendChild(new Option(m.sku + " | " + descPendek, m.sku));
+          const descPendek = (m.desc && m.desc.length > 48) ? m.desc.substring(0, 48) + '...' : (m.desc || '');
+          const commonMark = String(m.bagType || '').toUpperCase() === 'COMMON BAG' ? `COMMON • ${m.bagCode || '-'} • ` : '';
+          const qtyLabel = Array.isArray(cachedReportSummary) ? ` • ${Number(stockQtyForSku(m.sku)).toLocaleString('id-ID')} Zak` : '';
+          fragment.appendChild(new Option(`${commonMark}${String(m.segment || '').toUpperCase()} • ${m.sku} | ${descPendek}${qtyLabel}`, m.sku));
         });
 
         sel.appendChild(fragment);
         sel.disabled = false;
       }
 
-      async function autoFillDesc() { 
+      async function autoFillDesc() {
         const v = document.getElementById('sku').value;
-        const f = masterData.find(m => m.sku === v); 
+        const f = masterData.find(m => String(m.sku || '') === String(v || ''));
         const stockInput = document.getElementById('stockOnHand');
         const fifoText = document.getElementById('fifoRecommendationText');
-        
+
+        activeTransactionSegment = f ? String(f.segment || '') : '';
+
         if (!f) {
           document.getElementById('desc').value = "";
           if (stockInput) stockInput.value = "";
-          fifoText.innerHTML = "Pilih SKU untuk melihat rekomendasi BIN & Lot tertua.";
+          fifoText.innerHTML = "Pilih Bag / SKU untuk melihat rekomendasi BIN & Lot tertua.";
+          renderCommonBagPanel(null);
           return;
         }
 
-        document.getElementById('desc').value = f.desc; 
+        document.getElementById('desc').value = f.desc || f.description || '';
         stockInput.value = "Memuat...";
         fifoText.innerHTML = "Memuat rekomendasi FIFO...";
-        
+
         const transType = document.getElementById('transType').value.toLowerCase();
-        const isOutbound = transType.includes('delivery') || 
-                           transType.includes('selling') || 
-                           transType.includes('sample') || 
-                           transType.includes('promo') || 
-                           transType.includes('broken') || 
+        const isOutbound = transType.includes('delivery') ||
+                           transType.includes('selling') ||
+                           transType.includes('sample') ||
+                           transType.includes('promo') ||
+                           transType.includes('broken') ||
                            transType.includes('negatif');
 
-        // Use local cache if available to make it instantly responsive without waiting for server network roundtrip
         if (cachedReportSummary) {
-          const item = cachedReportSummary.find(s => s.sku === v);
-          stockInput.value = item ? item.qty + " Zak" : "0 Zak";
+          stockInput.value = Number(stockQtyForSku(v)).toLocaleString('id-ID') + " Zak";
         }
 
-        // Fetch fresh report data & FIFO recommendation in background
+        renderCommonBagPanel(f);
+
         const today = new Date().toISOString().split('T')[0];
         let promises = [apiCall(`getReportData&date=${today}`)];
         if (isOutbound) {
-          promises.push(apiCall(`getFifoRecommendation&sku=${v}`));
+          promises.push(apiCall(`getFifoRecommendation&sku=${encodeURIComponent(v)}`));
         }
 
         try {
           const results = await Promise.all(promises);
           const reportRes = results[0];
-          
+
           if (reportRes && reportRes.summary) {
             cachedReportSummary = reportRes.summary;
-            const item = cachedReportSummary.find(s => s.sku === v);
-            stockInput.value = item ? item.qty + " Zak" : "0 Zak";
+            stockInput.value = Number(stockQtyForSku(v, cachedReportSummary)).toLocaleString('id-ID') + " Zak";
+            renderCommonBagPanel(f);
           } else {
             stockInput.value = "0 Zak";
+            renderCommonBagPanel(f);
           }
 
           if (isOutbound) {
@@ -3195,16 +3401,17 @@ function matrixCellIsReadOnly(cell) {
           fifoText.innerHTML = "Gagal memuat data FIFO.";
         }
       }
-      
+
       async function addItemToList() {
-        const seg = document.getElementById('segment').value;
+        const selectedSeg = document.getElementById('segment').value;
         const sku = document.getElementById('sku').value;
+        const seg = activeTransactionSegment || selectedSeg;
         const lot = document.getElementById('lot').value;
         const bin = document.getElementById('bin').value;
         const qty = document.getElementById('qty').value;
         const type = document.getElementById('transType').value;
         
-        if(!seg || !sku || !bin || !qty) { 
+        if(!selectedSeg || !seg || !sku || !bin || !qty) { 
           showAlert("Perhatian", "Mohon lengkapi semua data form!"); 
           return; 
         }
@@ -3274,6 +3481,8 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('lot').value = ""; 
         document.getElementById('qty').value = ""; 
         document.getElementById('stockOnHand').value = "";
+        activeTransactionSegment = "";
+        renderCommonBagPanel(null);
       }
 
       function renderTable() {
@@ -3281,7 +3490,7 @@ function matrixCellIsReadOnly(cell) {
         tb.innerHTML = '';
         
         if(!transactionItems.length) { 
-          tb.innerHTML = '<tr id="emptyRow"><td colspan="8" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr>'; 
+          tb.innerHTML = '<tr id="emptyRow"><td colspan="9" style="text-align:center; color:#999; padding:20px;">Keranjang kosong</td></tr>'; 
           document.getElementById('btnSubmitAll').disabled = true; 
           return; 
         }
@@ -3290,7 +3499,7 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('btnSubmitAll').innerText = `Simpan ${transactionItems.length} Item ke Database`;
         
         transactionItems.forEach((it, i) => {
-          tb.innerHTML += `<tr><td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; color:var(--primary);">${it.transType}</span></td><td>${it.sku}</td><td>${it.desc}</td><td>${it.bin}</td><td>${it.lot}</td><td>${it.qty}</td><td><button onclick="transactionItems.splice(${i},1);renderTable()" class="btn-danger"><i class="fas fa-trash"></i></button></td></tr>`;
+          tb.innerHTML += `<tr><td><span style="background:#e2e8f0; padding:2px 6px; border-radius:4px; font-size:11px; font-weight:bold; color:var(--primary);">${it.transType}</span></td><td>${it.segment || '-'}</td><td>${it.sku}</td><td>${it.desc}</td><td>${it.bin}</td><td>${it.lot}</td><td>${it.qty}</td><td><button onclick="transactionItems.splice(${i},1);renderTable()" class="btn-danger"><i class="fas fa-trash"></i></button></td></tr>`;
         });
       }
 
@@ -3476,6 +3685,8 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('masterSegment').value = '';
         document.getElementById('masterUom').value = '';
         document.getElementById('masterWeight').value = '';
+        document.getElementById('masterBagType').value = '';
+        document.getElementById('masterBagCode').value = '';
         if (document.getElementById('masterStatus')) document.getElementById('masterStatus').value = 'ACTIVE';
         document.getElementById('masterSku').focus();
       }
@@ -3488,7 +3699,7 @@ function matrixCellIsReadOnly(cell) {
         countEl.innerText = `${masterData.length.toLocaleString('id-ID')} SKU`;
 
         if (!masterData.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="md-empty">Belum ada data</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="md-empty">Belum ada data</td></tr>';
           return;
         }
 
@@ -3496,7 +3707,10 @@ function matrixCellIsReadOnly(cell) {
           .map((m, originalIndex) => ({ ...m, __index: originalIndex }))
           .sort((a,b) => String(a.sku || '').localeCompare(String(b.sku || '')));
 
-        tbody.innerHTML = preview.map((m, i) => `
+        tbody.innerHTML = preview.map((m, i) => {
+          const bt = String(m.bagType || '').toUpperCase();
+          const btClass = bt === 'COMMON BAG' ? 'common' : 'dedicated';
+          return `
           <tr data-master-index="${m.__index}">
             <td>${i + 1}</td>
             <td><span class="md-segment">${escapeHtml(m.segment || '-')}</span></td>
@@ -3504,6 +3718,8 @@ function matrixCellIsReadOnly(cell) {
             <td>${escapeHtml(m.desc || m.description || '-')}</td>
             <td><span class="md-uom">${escapeHtml(m.uom || m.UOM || '-')}</span></td>
             <td class="md-weight">${m.weight !== '' && m.weight != null ? Number(m.weight).toLocaleString('id-ID') : '-'}</td>
+            <td><span class="md-bag-type ${btClass}">${escapeHtml(bt || '-')}</span></td>
+            <td><span class="md-bag-code">${escapeHtml(m.bagCode || '-')}</span></td>
             <td><span class="md-status ${m.status === 'INACTIVE' ? 'inactive' : 'active'}">${m.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE'}</span></td>
             <td>
               <div class="md-actions">
@@ -3520,9 +3736,8 @@ function matrixCellIsReadOnly(cell) {
               </div>
             </td>
           </tr>
-        `).join('');
+        `; }).join('');
       }
-
 
 
       const MASTER_EDIT_TOKEN = '0';
@@ -3571,6 +3786,8 @@ function matrixCellIsReadOnly(cell) {
         document.getElementById('masterSegment').value = item.segment || '';
         document.getElementById('masterUom').value = item.uom || item.UOM || '';
         document.getElementById('masterWeight').value = item.weight ?? item.weightPerZak ?? '';
+        document.getElementById('masterBagType').value = item.bagType || '';
+        document.getElementById('masterBagCode').value = item.bagCode || '';
         if (document.getElementById('masterStatus')) document.getElementById('masterStatus').value = item.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE';
 
         const btn = document.querySelector('#page-master button[data-master-save]');
@@ -3590,11 +3807,13 @@ function matrixCellIsReadOnly(cell) {
         const segment = document.getElementById('masterSegment').value.trim();
         const uom = document.getElementById('masterUom').value.trim().toUpperCase();
         const weight = Number(document.getElementById('masterWeight').value);
+        const bagType = document.getElementById('masterBagType').value.trim().toUpperCase();
+        const bagCode = document.getElementById('masterBagCode').value.trim().toUpperCase();
         const status = document.getElementById('masterStatus')?.value || 'ACTIVE';
 
-        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0) {
+        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0 || !bagType || !bagCode) {
           showAlert('Data Belum Lengkap',
-            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, dan <b>Weight per Zak</b>.');
+            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, <b>Weight per Zak</b>, <b>Bag Type</b>, dan <b>Bag Code</b>.');
           return;
         }
 
@@ -3611,6 +3830,8 @@ function matrixCellIsReadOnly(cell) {
            <b>${escapeHtml(sku)}</b><br>
            ${escapeHtml(desc)}<br>
            Segment: ${escapeHtml(segment)}<br>
+           Bag Type: ${escapeHtml(bagType)}<br>
+           Bag Code: ${escapeHtml(bagCode)}<br>
            UOM: ${escapeHtml(uom)}<br>
            Weight per Zak: ${weight.toLocaleString('id-ID')} kg`,
           async () => {
@@ -3629,16 +3850,18 @@ function matrixCellIsReadOnly(cell) {
               uom: uom,
               weight: weight,
               weightPerZak: weight,
-              rowValues: [segment, sku, desc, uom, weight]
+              bagType: bagType,
+              bagCode: bagCode,
+              columns: ['A','B','C','D','E','F','G'],
+              rowValues: [segment, sku, desc, uom, weight, bagType, bagCode]
             }, 'POST');
             showLoading(false);
 
             if (res && res.status === 'success') {
               masterData[index] = {
                 ...masterData[index],
-                status,
-                segment, sku, desc, description: desc, uom,
-                weight, weightPerZak: weight
+                status, segment, sku, desc, description: desc, uom,
+                weight, weightPerZak: weight, bagType, bagCode
               };
               renderMasterPreview();
               restoreMasterAddMode();
@@ -3709,11 +3932,13 @@ function matrixCellIsReadOnly(cell) {
         const segment = document.getElementById('masterSegment').value.trim();
         const uom = document.getElementById('masterUom').value.trim().toUpperCase();
         const weight = Number(document.getElementById('masterWeight').value);
+        const bagType = document.getElementById('masterBagType').value.trim().toUpperCase();
+        const bagCode = document.getElementById('masterBagCode').value.trim().toUpperCase();
 
-        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0) {
+        if (!segment || !sku || !desc || !uom || !Number.isFinite(weight) || weight <= 0 || !bagType || !bagCode) {
           showAlert(
             'Data Belum Lengkap',
-            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, dan <b>Weight per Zak</b>.'
+            'Field wajib diisi: <b>Segment</b>, <b>SKU / Item Code</b>, <b>Description</b>, <b>UOM</b>, <b>Weight per Zak</b>, <b>Bag Type</b>, dan <b>Bag Code</b>.'
           );
           return;
         }
@@ -3723,7 +3948,7 @@ function matrixCellIsReadOnly(cell) {
         );
 
         if (duplicate) {
-          showAlert('Data Duplikat', `SKU <b>${sku}</b> sudah ada di Master Data.`);
+          showAlert('Data Duplikat', `SKU <b>${escapeHtml(sku)}</b> sudah ada di Master Data.`);
           return;
         }
 
@@ -3732,29 +3957,31 @@ function matrixCellIsReadOnly(cell) {
            <b>${escapeHtml(sku)}</b><br>
            ${escapeHtml(desc)}<br>
            Segment: ${escapeHtml(segment)}<br>
+           Bag Type: ${escapeHtml(bagType)}<br>
+           Bag Code: ${escapeHtml(bagCode)}<br>
            UOM: ${escapeHtml(uom)}<br>
            Weight per Zak: ${weight.toLocaleString('id-ID')} kg`,
           async () => {
             showLoading(true);
 
-            // Exact MasterData column mapping:
+            // MasterData mapping:
             // A = Segment, B = SKU / Item Code, C = Description,
-            // D = UOM, E = Weight per Zak. F:J stay untouched/blank.
+            // D = UOM, E = Weight per Zak, F = Bag Type, G = Bag Code.
             const status = document.getElementById('masterStatus')?.value || 'ACTIVE';
             const res = await masterDataApiCall('addMasterData', {
               sheetName: 'MasterData',
               status: status,
-              segment: segment,        // Column A
-              sku: sku,                // Column B
-              desc: desc,              // Column C
-              description: desc,       // Column C (alias)
-              uom: uom,                // Column D
-              weight: weight,          // Column E
-              weightPerZak: weight,    // Column E (alias)
-
-              // Explicit row payload for Apps Script handlers that accept row values.
-              columns: ['A','B','C','D','E'],
-              rowValues: [segment, sku, desc, uom, weight]
+              segment: segment,
+              sku: sku,
+              desc: desc,
+              description: desc,
+              uom: uom,
+              weight: weight,
+              weightPerZak: weight,
+              bagType: bagType,
+              bagCode: bagCode,
+              columns: ['A','B','C','D','E','F','G'],
+              rowValues: [segment, sku, desc, uom, weight, bagType, bagCode]
             }, 'POST');
 
             showLoading(false);
@@ -3762,13 +3989,15 @@ function matrixCellIsReadOnly(cell) {
             if (res && res.status === 'success') {
               masterData.push({
                 status: status,
-                segment: segment,  // A
-                sku: sku,          // B
-                desc: desc,        // C
+                segment: segment,
+                sku: sku,
+                desc: desc,
                 description: desc,
-                uom: uom,          // D
-                weight: weight,    // E
-                weightPerZak: weight
+                uom: uom,
+                weight: weight,
+                weightPerZak: weight,
+                bagType: bagType,
+                bagCode: bagCode
               });
               renderMasterPreview();
               resetMasterForm();
@@ -3780,7 +4009,6 @@ function matrixCellIsReadOnly(cell) {
           }
         );
       }
-
 
 
       /* MASTER EDIT EVENTS */
