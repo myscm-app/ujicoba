@@ -1943,7 +1943,7 @@
           </div>
 
           <div class="required-note">
-            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:E</b> dan <b>K:L</b> pada sheet <b>MasterData</b>: Segment, SKU, Description, UOM, Weight, Bag Type, Bag Code.
+            <span class="required-mark">*</span> Wajib diisi · Data baru ditulis ke kolom <b>A:E</b> dan <b>K:L</b> pada sheet <b>MasterData</b>: Segment, SKU, Description, UOM, Weight, Physical, Bag Code.
           </div>
 
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -1961,7 +1961,7 @@
             <div>
               <h3 style="margin:0;">Preview Master Data</h3>
               <div style="font-size:10px;color:#64748b;margin-top:3px;">
-                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · F Bag Type · G Bag Code · Status
+                Sheet <b>MasterData</b> · A Segment · B SKU · C Description · D UOM · E Weight/Zak · K Physical · L Bag Code · Status
               </div>
             </div>
             <span id="masterCount" style="font-size:11px;font-weight:800;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;padding:5px 9px;border-radius:999px;">0 SKU</span>
@@ -2503,21 +2503,33 @@
       function normalizeMasterDataRecord(m) {
         if (!m) return null;
         // MasterData existing sheet: K = Physical, L = Bag Code.
-        // Keep aliases for API/object responses and support both header names.
-        const bagTypeRaw = m.bagType ?? m.BagType ?? m.physical ?? m.Physical ?? m['Bag Type'] ?? m['Physical'] ?? m[10] ?? '';
-        const bagCodeRaw = m.bagCode ?? m.BagCode ?? m['Bag Code'] ?? m[11] ?? '';
+        // Support both object responses and raw row arrays A:L.
+        const isArrayRow = Array.isArray(m);
+        const get = (...keys) => {
+          for (const k of keys) {
+            const v = isArrayRow ? m[k] : m?.[k];
+            if (v !== undefined && v !== null && String(v).trim() !== '') return v;
+          }
+          return '';
+        };
+
+        // K = 11th column / index 10, L = 12th column / index 11.
+        // Physical is the authoritative bag classification in the existing sheet.
+        const physicalRaw = get('physical','Physical','bagType','BagType','Bag Type','K',10);
+        const bagCodeRaw = get('bagCode','BagCode','Bag Code','L',11);
+
         return {
-          rowNumber: m.rowNumber ?? m.row ?? null,
-          status: String(m.status ?? m.Status ?? 'ACTIVE').toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
-          segment: m.segment ?? m.Segment ?? m[0] ?? '',
-          sku: m.sku ?? m.SKU ?? m.itemCode ?? m['Item Code'] ?? m[1] ?? '',
-          desc: m.desc ?? m.description ?? m.Description ?? m[2] ?? '',
-          description: m.description ?? m.desc ?? m.Description ?? m[2] ?? '',
-          uom: m.uom ?? m.UOM ?? m[3] ?? '',
-          weight: m.weight ?? m.weightPerZak ?? m['Weight per Zak'] ?? m[4] ?? '',
-          bagType: String(bagTypeRaw).trim().toUpperCase(),
-          physical: String(bagTypeRaw).trim().toUpperCase(),
-          bagCode: String(bagCodeRaw).trim().toUpperCase()
+          rowNumber: get('rowNumber','row'),
+          status: String(get('status','Status','M','m') || 'ACTIVE').trim().toUpperCase() === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE',
+          segment: String(get('segment','Segment',0)).trim(),
+          sku: String(get('sku','SKU','itemCode','Item Code',1)).trim(),
+          desc: String(get('desc','description','Description',2)).trim(),
+          description: String(get('description','desc','Description',2)).trim(),
+          uom: String(get('uom','UOM',3)).trim(),
+          weight: get('weight','weightPerZak','Weight per Zak',4),
+          bagType: String(physicalRaw || '').trim().toUpperCase(),
+          physical: String(physicalRaw || '').trim().toUpperCase(),
+          bagCode: String(bagCodeRaw || '').trim().toUpperCase()
         };
       }
 
@@ -2527,6 +2539,14 @@
           const list = Array.isArray(d) ? d : (Array.isArray(d.data) ? d.data : null);
           if (!list) throw new Error(d?.message || 'Format MasterData tidak valid.');
           masterData = list.map(normalizeMasterDataRecord).filter(Boolean);
+
+          // Diagnostic: if K/L are not returned by the MasterData API, the HTML cannot
+          // know that two rows share the same physical bag. This catches the exact issue
+          // where the sheet is correct but getMasterData still returns only A:E.
+          const commonRows = masterData.filter(m => m.bagType === 'COMMON BAG');
+          if (commonRows.length && commonRows.every(m => !m.bagCode)) {
+            console.warn('WMS COMMON BAG: API getMasterData belum mengirim kolom K (Physical) / L (Bag Code).');
+          }
         } catch (error) {
           console.error('Gagal memuat MasterData:', error);
           masterData = [];
@@ -3280,13 +3300,14 @@ function matrixCellIsReadOnly(cell) {
       }
 
       function commonBagPeersFor(record) {
-        if (!record || String(record.bagType || '').toUpperCase() !== 'COMMON BAG' || !record.bagCode) return [];
-        const code = String(record.bagCode).trim().toLowerCase();
-        return masterData.filter(m =>
+        if (!record || String(record.bagType || '').trim().toUpperCase() !== 'COMMON BAG') return [];
+        const code = String(record.bagCode || '').trim().toLowerCase();
+        if (!code) return [];
+        return uniqueBySku(masterData.filter(m =>
           m.status !== 'INACTIVE' &&
           String(m.bagType || '').trim().toUpperCase() === 'COMMON BAG' &&
           String(m.bagCode || '').trim().toLowerCase() === code
-        );
+        ));
       }
 
       function renderTransactionDescription(record) {
@@ -3299,8 +3320,15 @@ function matrixCellIsReadOnly(cell) {
           return;
         }
 
-        const isCommon = String(record.bagType || '').trim().toUpperCase() === 'COMMON BAG' && !!record.bagCode;
+        const bagType = String(record.bagType || '').trim().toUpperCase();
+        const isCommon = bagType === 'COMMON BAG' && !!record.bagCode;
         const activeDesc = String(record.desc || record.description || '').trim();
+
+        if (bagType === 'COMMON BAG' && !record.bagCode) {
+          display.className = 'tx-description-box';
+          display.innerHTML = `<div class="tx-common-summary"><div style="font-size:10px;font-weight:800;color:#b45309;">COMMON BAG TERDETEKSI, TAPI BAG CODE BELUM DITERIMA DARI MASTER DATA API.</div><div style="margin-top:4px;font-size:10px;color:#64748b;">Pastikan backend getMasterData ikut mengirim kolom K (Physical) dan L (Bag Code).</div></div>`;
+          return;
+        }
 
         if (!isCommon) {
           display.className = 'tx-description-box single';
@@ -3335,6 +3363,7 @@ function matrixCellIsReadOnly(cell) {
               <span class="tx-common-summary-code">BAG ${escapeHtml(record.bagCode)}</span>
             </div>
             ${rows || `<div style="font-size:10px;color:#64748b;">Belum ada mapping segment untuk Bag Code ini.</div>`}
+            ${peers.length === 1 ? `<div style="margin-top:6px;font-size:9px;color:#b45309;">Baru 1 mapping diterima dari MasterData API untuk Bag Code ${escapeHtml(record.bagCode)}.</div>` : ''}
             <div class="tx-common-summary-total">
               <span>TOTAL STOCK COMMON BAG</span>
               <strong>${totalQty.toLocaleString('id-ID')} Zak</strong>
@@ -4138,7 +4167,7 @@ function matrixCellIsReadOnly(cell) {
 
             // MasterData mapping:
             // A = Segment, B = SKU / Item Code, C = Description,
-            // D = UOM, E = Weight per Zak, F = Bag Type, G = Bag Code.
+            // D = UOM, E = Weight per Zak, K = Physical, L = Bag Code.
             const status = document.getElementById('masterStatus')?.value || 'ACTIVE';
             const res = await masterDataApiCall('addMasterData', {
               sheetName: 'MasterData',
